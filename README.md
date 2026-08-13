@@ -1,5 +1,5 @@
 # Binary Mind (Medium Clone)
-<img width="3304" height="1709" alt="Binary Mind" src="https://github.com/user-attachments/assets/b17ce6bd-6f13-40be-8601-e2062249cc82" />
+<img width="3304" height="1709" alt="BMind" src="https://github.com/user-attachments/assets/7c726b93-9bb8-4f13-9747-8541d4bd9da4" />
 
 
 A production-grade **Medium-inspired** writing and reading platform. Stories are persisted in **Supabase** (PostgreSQL), authentication is handled via **Google Identity Services**, and the frontend is a fully code-split React 19 SPA.
@@ -28,6 +28,8 @@ A production-grade **Medium-inspired** writing and reading platform. Stories are
 ## Features
 
 ### Reading
+<img width="1087" height="566" alt="image" src="https://github.com/user-attachments/assets/5aa3ee67-3f3c-4c9e-a0bc-4de95d074868" />
+
 - **Public feed** — all published stories visible without login, newest first
 - **Story page** — full block-rendered article with author byline, publish date, and estimated reading time
 - **Reading progress bar** — fixed top indicator that fills as you scroll
@@ -40,6 +42,8 @@ A production-grade **Medium-inspired** writing and reading platform. Stories are
 - **View counter** — incremented server-side via a `security definer` RPC so it works for anonymous readers
 
 ### Writing & Editing
+<img width="1087" height="566" alt="image" src="https://github.com/user-attachments/assets/1cd9f3c6-0c9b-486d-8b98-43224473d5c4" />
+
 - **Block-based editor** — 16 block types: Title, Subtitle, H1–H3, Paragraph, Quote, Pull Quote, Divider, Bullet list, Numbered list, Checklist, Image, Code, YouTube embed, Tweet/X embed, GitHub Gist, Table, Callout
 - **Markdown shortcuts** — type `` ` `` `` ` `` `` ` `` → code block, `* ` / `- ` → bullet, `1. ` → numbered, `> ` → quote
 - **Undo / Redo** — in-editor history stack, separate from browser history
@@ -50,6 +54,8 @@ A production-grade **Medium-inspired** writing and reading platform. Stories are
 - **Preview mode** — toggle between editor and rendered preview in the same route
 
 ### Publishing & Story Management
+<img width="1088" height="566" alt="image" src="https://github.com/user-attachments/assets/d7f867f9-f9d2-4e21-95d5-4fabebc46de3" />
+
 - **Liquid-glass publish dialog** — iOS-style frosted-glass modal to set cover image, tags, and collaborators before going live
 - **Blog settings panel** — slide-over Sheet to update cover image, tags, and collaborators on already-published stories, accessible directly from My Stories without navigating away
 - **Collaborators** — add co-authors by email with live user autocomplete (queries `users` table as you type)
@@ -59,33 +65,45 @@ A production-grade **Medium-inspired** writing and reading platform. Stories are
 - **Delete** — permanent delete with confirmation dialog
 
 ### My Stories dashboard
+<img width="1088" height="566" alt="image" src="https://github.com/user-attachments/assets/653438b6-44cd-4552-9c1b-a198e4bbc9ce" />
+
 - **Published** tab — view, edit, configure settings, or view stats per story
 - **Drafts** tab — resume editing or publish
 - **Collaborations** tab — stories you've been added to as a co-author
 - **Per-story stats** — views, likes, shares, reading time, word count in a dialog (author-only)
 
 ### Author Analytics (Dashboard)
+<img width="1089" height="566" alt="image" src="https://github.com/user-attachments/assets/0c56a952-39f6-4069-84a9-6040c240f1fe" />
+
 - Total / draft / published / archived story counts
 - Aggregate views, likes, total words, and average story length
 - 14-day publishing activity bar chart (Recharts)
 - Most-viewed story and average reading time
 
 ### Search
+<img width="1089" height="566" alt="image" src="https://github.com/user-attachments/assets/2bd6df50-65b9-40ca-a128-40a8d2c00f94" />
+
 - Real-time client-side search across titles, descriptions, tags, categories, and block content
 - URL-synchronised query parameter (`?q=…`) — shareable and browser-back-compatible
 
 ### User Profile
+<img width="1090" height="566" alt="image" src="https://github.com/user-attachments/assets/33d555cb-1919-4566-b6ac-b68cfd8ced8a" />
+
 - Edit display name, bio, Twitter, GitHub, and website
 - Changes propagate to all blog `author_name` rows in Supabase automatically
 - Avatar sourced from Google profile photo
 
 ### Auth
+<img width="1088" height="564" alt="image" src="https://github.com/user-attachments/assets/9fedee23-6c8a-4308-a0b0-b2f93f7b01fb" />
+
 - **Google Identity Services (GIS)** — sign in with your Google account; the JWT `sub` is used as the stable user ID
 - **Demo mode** — when `VITE_GOOGLE_CLIENT_ID` is not set, a local mock profile is created so the app is fully functional for development
 - **Session persistence** — auth session is kept in `localStorage` (obfuscated) and restored on page reload
 - **Protected routes** — `<RequireAuth>` redirects unauthenticated users to `/login` with a `from` state so they land back after sign-in
 
 ### Theme
+<img width="1092" height="569" alt="image" src="https://github.com/user-attachments/assets/5cc770d3-d2f6-45af-8c81-08b8d3b21490" />
+
 - Light / Dark / System — toggle in the nav bar, persisted to `localStorage`
 
 ---
