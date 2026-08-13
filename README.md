@@ -1,172 +1,488 @@
 # Binary Mind (Medium Clone)
-<img width="3304" height="1709" alt="BMind" src="https://github.com/user-attachments/assets/b17ce6bd-6f13-40be-8601-e2062249cc82" />
+<img width="3304" height="1709" alt="Binary Mind" src="https://github.com/user-attachments/assets/b17ce6bd-6f13-40be-8601-e2062249cc82" />
 
 
-A production-grade **Medium.com-inspired** writing and reading experience built as
-a fully static single-page application. The whole app runs in the browser and
-persists to `localStorage` — no backend required — so it deploys to GitHub Pages
-(or any static host) with zero configuration.
+A production-grade **Medium-inspired** writing and reading platform. Stories are persisted in **Supabase** (PostgreSQL), authentication is handled via **Google Identity Services**, and the frontend is a fully code-split React 19 SPA.
 
-This is a **foundation slice** of the full brief: routing, theming, Google auth,
-local persistence, a block-based editor, a Medium-style reading page, and a
-dashboard shell are all in place. Individual features (all block types,
-advanced analytics, MFA, etc.) are structured to extend incrementally.
+---
 
-## Tech stack
+## Table of Contents
 
-| Concern       | Library                             |
-| ------------- | ----------------------------------- |
-| Build         | Vite 6                              |
-| UI framework  | React 19 + TypeScript (strict)      |
-| Routing       | react-router-dom v7 (BrowserRouter) |
-| UI primitives | shadcn/ui (Radix) + Tailwind CSS v4 |
-| State         | Zustand (per-feature stores)        |
-| Forms         | react-hook-form + zod               |
-| Charts        | Recharts                            |
-| Auth          | Google Identity Services (GIS)      |
-| Icons         | lucide-react                        |
-| Toasts        | sonner                              |
+1. [Features](#features)
+2. [Tech Stack](#tech-stack)
+3. [Project Structure](#project-structure)
+4. [Data Flow](#data-flow)
+5. [Database Schema](#database-schema)
+6. [Getting Started](#getting-started)
+7. [Environment Variables](#environment-variables)
+8. [Google OAuth Setup](#google-oauth-setup)
+9. [Supabase Setup](#supabase-setup)
+10. [Deploying](#deploying)
+11. [Architecture Decisions](#architecture-decisions)
+12. [Local Storage Usage](#local-storage-usage)
+13. [Accessibility & Performance](#accessibility--performance)
+14. [Roadmap](#roadmap)
 
-> Kibo UI is a set of *shadcn-compatible* blocks. This project uses shadcn
-> primitives directly; drop in specific Kibo blocks as needed via their CLI.
+---
 
-## Getting started
+## Features
 
-```bash
-bun install
-bun run dev        # http://localhost:8080
-bun run build      # dist/
-bun run preview
-```
+### Reading
+- **Public feed** — all published stories visible without login, newest first
+- **Story page** — full block-rendered article with author byline, publish date, and estimated reading time
+- **Reading progress bar** — fixed top indicator that fills as you scroll
+- **Like / Unlike** — one like per authenticated user, backed by a Postgres join table + atomic RPC
+- **Bookmark** — saved per-user in Supabase; falls back to `localStorage` when signed out
+- **Share** — native share API + direct links to Twitter/X, LinkedIn, Facebook, Reddit, WhatsApp, and Email
+- **Copy link** — one-click clipboard copy
+- **Prev / Next navigation** — adjacent published stories with cover image thumbnails
+- **Related stories** — three cards at the bottom, each with cover image preview
+- **View counter** — incremented server-side via a `security definer` RPC so it works for anonymous readers
 
-## Google sign-in
+### Writing & Editing
+- **Block-based editor** — 16 block types: Title, Subtitle, H1–H3, Paragraph, Quote, Pull Quote, Divider, Bullet list, Numbered list, Checklist, Image, Code, YouTube embed, Tweet/X embed, GitHub Gist, Table, Callout
+- **Markdown shortcuts** — type `` ` `` `` ` `` `` ` `` → code block, `* ` / `- ` → bullet, `1. ` → numbered, `> ` → quote
+- **Undo / Redo** — in-editor history stack, separate from browser history
+- **Drag-and-drop reorder** — grab the grip handle to reorder blocks
+- **Autosave** — every block change triggers a debounced `UPDATE` to Supabase
+- **Image crop tool** — built-in crop UI for image blocks
+- **Inline styling** — per-block font size, weight, colour, and alignment via a style popover
+- **Preview mode** — toggle between editor and rendered preview in the same route
 
-The app uses Google Identity Services and works in two modes:
+### Publishing & Story Management
+- **Liquid-glass publish dialog** — iOS-style frosted-glass modal to set cover image, tags, and collaborators before going live
+- **Blog settings panel** — slide-over Sheet to update cover image, tags, and collaborators on already-published stories, accessible directly from My Stories without navigating away
+- **Collaborators** — add co-authors by email with live user autocomplete (queries `users` table as you type)
+- **Tags** — up to 7 tags per story, shown on cards and the reading page
+- **Statuses** — `draft` → `published` → `archived`; each has its own list view
+- **Duplicate** — clone any story into a new draft in one click
+- **Delete** — permanent delete with confirmation dialog
 
-- **With a client ID** — set `VITE_GOOGLE_CLIENT_ID` in `.env.local` (create it
-  at <https://console.cloud.google.com/> → *APIs & Services* → *Credentials*,
-  add your deployed origin to *Authorized JavaScript origins*). The
-  standard Google button renders and returns a real JWT.
-- **Without a client ID** — the login screen shows a demo button that creates
-  a local profile. Perfect for previewing the app or local development.
+### My Stories dashboard
+- **Published** tab — view, edit, configure settings, or view stats per story
+- **Drafts** tab — resume editing or publish
+- **Collaborations** tab — stories you've been added to as a co-author
+- **Per-story stats** — views, likes, shares, reading time, word count in a dialog (author-only)
 
-## Deploying to GitHub Pages
+### Author Analytics (Dashboard)
+- Total / draft / published / archived story counts
+- Aggregate views, likes, total words, and average story length
+- 14-day publishing activity bar chart (Recharts)
+- Most-viewed story and average reading time
 
-1. Set the project's base path when building (only needed if the site is served
-   from a subpath like `https://user.github.io/repo/`):
+### Search
+- Real-time client-side search across titles, descriptions, tags, categories, and block content
+- URL-synchronised query parameter (`?q=…`) — shareable and browser-back-compatible
 
-   ```bash
-   VITE_BASE=/repo/ bun run build
-   ```
+### User Profile
+- Edit display name, bio, Twitter, GitHub, and website
+- Changes propagate to all blog `author_name` rows in Supabase automatically
+- Avatar sourced from Google profile photo
 
-2. Publish `dist/` to the `gh-pages` branch (any workflow will do). The
-   `public/404.html` fallback preserves deep links so `BrowserRouter` can
-   resolve them on load — set `segmentCount` in that file if your base has
-   more than one path segment.
+### Auth
+- **Google Identity Services (GIS)** — sign in with your Google account; the JWT `sub` is used as the stable user ID
+- **Demo mode** — when `VITE_GOOGLE_CLIENT_ID` is not set, a local mock profile is created so the app is fully functional for development
+- **Session persistence** — auth session is kept in `localStorage` (obfuscated) and restored on page reload
+- **Protected routes** — `<RequireAuth>` redirects unauthenticated users to `/login` with a `from` state so they land back after sign-in
 
-## Architecture
+### Theme
+- Light / Dark / System — toggle in the nav bar, persisted to `localStorage`
+
+---
+
+## Tech Stack
+
+| Concern | Library | Version |
+|---|---|---|
+| Build | Vite | 6 |
+| UI framework | React + TypeScript (strict) | 19 / 5.8 |
+| Routing | react-router-dom (BrowserRouter) | 7 |
+| UI primitives | shadcn/ui (Radix UI) | latest |
+| Styling | Tailwind CSS | v4 |
+| State management | Zustand | 5 |
+| Backend / DB | Supabase (PostgreSQL) | 2 |
+| Auth | Google Identity Services (GIS) | — |
+| Data fetching | @tanstack/react-query | 5 |
+| Forms | react-hook-form + zod | 7 / 3 |
+| Charts | Recharts | 2 |
+| Date formatting | date-fns | 4 |
+| Icons | lucide-react | latest |
+| Toasts | sonner | 2 |
+| Unique IDs | uuid | 11 |
+
+---
+
+## Project Structure
 
 ```
 src/
-├── app/               # <App /> — router + providers
-├── components/        # shadcn primitives + generic UI
-├── constants/         # env-independent configuration
-├── features/          # feature-first modules (no cross-imports)
-│   ├── auth/          # auth store + Google button + <RequireAuth />
-│   ├── blogs/         # blog store + list view
-│   ├── bookmarks/     # bookmark store
-│   ├── editor/        # BlockEditor + BlockRenderer
-│   └── theme/         # theme store + toggle
-├── layouts/           # AppLayout, AuthLayout
-├── pages/             # one file per route, code-split via React.lazy
-├── storage/           # localStorage wrapper + obfuscation layer
-├── types/             # shared domain types
-└── styles.css         # Tailwind v4 entry + design tokens
+├── app/
+│   └── App.tsx              # Router, providers, DataBootstrap
+├── components/
+│   ├── ui/                  # shadcn/ui primitives (Button, Dialog, Sheet, …)
+│   ├── ErrorBoundary.tsx
+│   └── PageLoader.tsx
+├── constants/
+│   └── index.ts             # APP_NAME, STORAGE_KEYS, GOOGLE_CLIENT_ID
+├── features/                # Feature-first modules — no cross-feature imports
+│   ├── auth/
+│   │   ├── authStore.ts     # Zustand store: login, logout, updateProfile
+│   │   ├── GoogleSignInButton.tsx
+│   │   └── RequireAuth.tsx  # Route guard
+│   ├── blogs/
+│   │   ├── blogStore.ts     # Zustand store: CRUD, likes, collaborators, views
+│   │   ├── BlogListPage.tsx # Reusable list for Archive etc.
+│   │   ├── BlogSettingsPanel.tsx  # Sheet: cover / tags / collaborators
+│   │   ├── BlogStatsDialog.tsx    # Stats modal (author-only)
+│   │   └── PublishDialog.tsx      # Liquid-glass publish flow
+│   ├── bookmarks/
+│   │   └── bookmarkStore.ts # Supabase-backed, localStorage fallback
+│   ├── editor/
+│   │   ├── BlockEditor.tsx  # 16-block editor with undo/redo/drag
+│   │   ├── BlockRenderer.tsx
+│   │   ├── BlockStylePopover.tsx
+│   │   ├── CropTool.tsx
+│   │   ├── blockStyle.ts
+│   │   └── inline.tsx       # InlineEditable component
+│   └── theme/
+│       ├── themeStore.ts
+│       └── ThemeToggle.tsx
+├── hooks/
+│   ├── use-mobile.tsx
+│   └── useStableCallback.ts
+├── layouts/
+│   ├── AppLayout.tsx        # Sticky nav + footer
+│   └── AuthLayout.tsx
+├── lib/
+│   ├── database.types.ts    # Hand-rolled Supabase type map
+│   ├── supabase.ts          # createClient singleton
+│   └── utils.ts             # cn() helper
+├── pages/                   # One file per route, all React.lazy code-split
+│   ├── Home.tsx             # Feed + hero + sidebar
+│   ├── ReadBlog.tsx         # Article reader
+│   ├── Write.tsx            # Creates a blank draft, redirects to /edit/:id
+│   ├── EditBlog.tsx         # Editor + settings + publish
+│   ├── MyStories.tsx        # Published / Drafts / Collaborations tabs
+│   ├── Dashboard.tsx        # Analytics overview
+│   ├── Profile.tsx          # Edit name / bio / social links
+│   ├── Search.tsx           # Full-text client-side search
+│   ├── Bookmarks.tsx
+│   ├── Drafts.tsx           # → /my-stories?tab=draft
+│   ├── Published.tsx        # → /my-stories?tab=published
+│   ├── Archive.tsx
+│   ├── Settings.tsx
+│   ├── Login.tsx
+│   └── NotFound.tsx
+├── storage/
+│   ├── crypto.ts            # enc:v1:<base64> obfuscation layer
+│   └── localStore.ts        # Typed localStorage wrapper
+├── types/
+│   └── index.ts             # Blog, Block, Collaborator, UserProfile, AuthSession
+└── styles.css               # Tailwind v4 entry + CSS design tokens
 ```
 
-**Feature boundaries.** Each feature owns its store, components, and hooks.
-Pages compose features — features never import from pages. UI primitives in
-`components/ui/` never import from features.
+---
 
-**Business logic vs UI vs storage.**
+## Data Flow
 
-- `storage/localStore.ts` is the only place that talks to `localStorage`.
-- Each feature store (`authStore`, `blogStore`, `bookmarkStore`, `themeStore`)
-  is the sole owner of its slice; components read via selectors.
-- Presentation lives in `pages/` and `features/**/components`.
+```
+App boot
+└── DataBootstrap
+      ├── fetchBlogs()           → SELECT all published rows (public, no auth)
+      ├── fetchLikedBlogs(uid)   → SELECT blog_likes WHERE user_id = uid
+      └── fetchBookmarks(uid)    → SELECT bookmarks WHERE user_id = uid
 
-## Storage format
+Google Sign-in  (loginWithGoogleCredential)
+└── Decode JWT payload  →  extract sub / email / name / picture
+      ├── UPSERT users row       (INSERT on first login, UPDATE email+avatar on return)
+      ├── SELECT full profile    (bio, social links, custom display name)
+      ├── fetchBlogs(userId)     → +user's own drafts / archived
+      ├── fetchLikedBlogs(uid)
+      └── fetchBookmarks(uid)
 
-All values are wrapped by `storage/crypto.ts` before being written to
-`localStorage`. The encoding is `enc:v1:<base64(json)>` — it is
-**obfuscation, not encryption**: browser JS cannot keep a key secret from
-the user. The interface is symmetric so it can be upgraded to WebCrypto
-`AES-GCM` when a real backend supplies key material.
+Write
+└── create()
+      ├── Optimistic Zustand update  (editor opens instantly)
+      └── INSERT blogs row
 
-| Key               | Shape                              |
-| ----------------- | ---------------------------------- |
-| `mc.auth.v1`      | `AuthSession` (user + jwt)         |
-| `mc.blogs.v1`     | `Blog[]`                           |
-| `mc.bookmarks.v1` | `string[]` (blog IDs)              |
-| `mc.history.v1`   | `string[]` (last 50 read blog IDs) |
-| `mc.theme.v1`     | `"light" \| "dark" \| "system"`    |
+Edit  (every block change)
+└── updateBlocks()
+      ├── Recompute stats (word count, reading time) in-browser
+      ├── Optimistic Zustand update
+      └── UPDATE blogs SET blocks, word_count, reading_time
 
-Domain types live in `src/types/index.ts`.
+Publish
+└── PublishDialog → save()
+      ├── UPDATE blogs SET cover_image, tags
+      ├── setCollaborators()
+      │     ├── SELECT users WHERE email IN (...)
+      │     ├── DELETE blog_collaborators WHERE blog_id = ?
+      │     └── INSERT blog_collaborators rows
+      └── UPDATE blogs SET status = 'published', published_at = now()
 
-## Future backend migration
+Reading
+├── incrementView()   → RPC increment_blog_views  (security definer, anon-safe)
+└── toggleLike()
+      ├── Optimistic like count update
+      └── RPC add_blog_like / remove_blog_like  (idempotent, returns authoritative count)
+```
 
-Because features are structured around stores, moving to a backend means
-replacing store internals — call sites stay identical.
+---
 
-1. **Auth** — swap `authStore.loginWithGoogleCredential` to POST the JWT to
-   `/api/auth/google`; store the returned session in `localStore` as today.
-2. **Blogs / bookmarks** — replace the in-store arrays with an
-   `@tanstack/react-query` cache backed by REST/GraphQL. Keep the same
-   selector signatures.
-3. **Encryption** — swap `storage/crypto.ts` for WebCrypto AES-GCM using a
-   key derived per-user server-side.
-4. **Search** — for anything beyond a few hundred stories, move filtering to
-   the backend (e.g. Postgres full-text) instead of iterating in memory.
+## Database Schema
 
-## Accessibility & performance
+Five tables, all using `text` primary keys (Google `sub` strings for users, client-generated UUID strings for everything else).
 
-- Semantic landmarks (`<header>`, `<main>`, `<footer>`, `<nav>`, `<article>`).
-- All icon-only buttons carry `aria-label`.
-- Keyboard-navigable via Radix primitives.
-- Routes are code-split with `React.lazy`; large vendor libs (`recharts`,
-  `react-router`) land in their own chunks.
-- Images are `loading="lazy"`.
-- `min-h-dvh` for correct mobile viewport height.
+```
+┌─────────────┐         ┌──────────────────────┐
+│   users     │         │  blog_collaborators  │
+│─────────────│    ┌───▶│──────────────────────│
+│ id (PK)     │    │    │ blog_id (FK → blogs) │
+│ email       │    │    │ user_id (FK → users) │
+│ name        │    │    │ added_at             │
+│ avatar      │    │    └──────────────────────┘
+│ bio         │    │
+│ social_*    │    │    ┌──────────────────────┐
+│ joined_at   │    │    │    blog_likes        │
+└──────┬──────┘    │    │──────────────────────│
+       │           │    │ user_id (FK → users) │
+       │           │    │ blog_id (FK → blogs) │
+       ▼           │    │ created_at           │
+┌─────────────┐    │    └──────────────────────┘
+│    blogs    │────┘
+│─────────────│         ┌──────────────────────┐
+│ id (PK)     │────────▶│     bookmarks        │
+│ author_id   │         │──────────────────────│
+│ title/slug  │         │ user_id (FK → users) │
+│ cover_image │         │ blog_id (FK → blogs) │
+│ tags[]      │         │ created_at           │
+│ blocks jsonb│         └──────────────────────┘
+│ status      │
+│ views/likes │
+│ word_count  │
+│ seo jsonb   │
+└─────────────┘
+
+RLS: all tables have Row Level Security enabled with open policies
+     (using true). Security is enforced at the app layer via
+     RequireAuth + Google sign-in. The anon key is intentionally
+     public — embedding it in JS is the standard Supabase pattern.
+
+RPCs (security definer — bypass RLS, safe for anon callers):
+  • increment_blog_views(blog_id text)
+  • add_blog_like(p_blog_id text, p_user_id text) → integer
+  • remove_blog_like(p_blog_id text, p_user_id text) → integer
+```
+
+> The full schema is in [`supabase/schema.sql`](supabase/schema.sql). Run it once in the Supabase SQL Editor to create all tables, indexes, triggers, and functions.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ (or Bun 1.x)
+- A [Supabase](https://supabase.com) project (free tier works fine)
+- A Google Cloud project for OAuth (optional — a demo mode works without it)
+
+### Install & run
+
+```bash
+# clone
+git clone <repo-url>
+cd binarymind
+
+# install (use bun or npm/pnpm/yarn — all work)
+bun install
+
+# copy the env template and fill in your values
+cp .env.local.example .env.local
+
+# start the dev server
+bun run dev          # http://localhost:8080
+```
+
+### Other scripts
+
+```bash
+bun run build        # production build → dist/
+bun run preview      # preview the production build locally
+bun run lint         # ESLint
+bun run format       # Prettier
+```
+
+---
+
+## Environment Variables
+
+Create a `.env.local` file in the project root:
+
+```env
+# ── Supabase ───────────────────────────────────────────────────────
+# Find these in: Supabase Dashboard → Project Settings → API
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
+
+# ── Google OAuth ───────────────────────────────────────────────────
+# Optional. Without this, the app uses a local demo profile.
+# See "Google OAuth Setup" below.
+VITE_GOOGLE_CLIENT_ID=<your-oauth-client-id>.apps.googleusercontent.com
+
+# ── Vite base path ─────────────────────────────────────────────────
+# Only needed when deploying to a subpath (e.g. GitHub Pages /repo/).
+# Leave unset for root deployments.
+# VITE_BASE=/repo/
+```
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_SUPABASE_URL` | **Yes** | Your Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | **Yes** | Public anon key (safe to expose in JS) |
+| `VITE_GOOGLE_CLIENT_ID` | No | Enables real Google sign-in; omit for demo mode |
+| `VITE_BASE` | No | Vite base path for subpath deployments |
+
+---
+
+## Google OAuth Setup
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials**.
+2. Click **Create Credentials** → **OAuth 2.0 Client ID** → **Web application**.
+3. Under **Authorized JavaScript origins** add:
+   - `http://localhost:8080` (local dev)
+   - Your production domain (e.g. `https://binarymind.example.com`)
+4. Copy the **Client ID** and paste it as `VITE_GOOGLE_CLIENT_ID` in `.env.local`.
+5. No redirect URI is needed — Google Identity Services uses a popup flow, not a redirect.
+
+> **Demo mode** — if `VITE_GOOGLE_CLIENT_ID` is empty or missing, the login page shows a "Continue as Demo User" button that creates a local profile. All features work except real Google identity.
+
+---
+
+## Supabase Setup
+
+1. Create a new project at [supabase.com](https://supabase.com).
+2. Go to **SQL Editor** → **New query**, paste the entire contents of [`supabase/schema.sql`](supabase/schema.sql), and click **Run**.
+3. Copy your **Project URL** and **anon key** from **Project Settings → API** into `.env.local`.
+
+That's it — the schema creates all five tables, indexes, RLS policies, triggers, and stored functions in a single idempotent script.
+
+### Why open RLS policies?
+
+This app uses **Google Identity Services directly** (not Supabase Auth). Because there is no Supabase-issued JWT, standard `auth.uid()` RLS expressions evaluate to `null` for every request. Access control is enforced at the application layer:
+
+- All write routes are behind `<RequireAuth>` which redirects unauthenticated users to `/login`.
+- The Supabase `anon` key is intentionally public — this is the [standard Supabase pattern](https://supabase.com/docs/guides/api/api-keys) for the anon key.
+- If you later add Supabase Auth (e.g. for server-side rendering or MFA), swap the open policies for JWT-based ones without changing any application code.
+
+---
+
+## Deploying
+
+### Vercel / Netlify (recommended)
+
+1. Connect your repo.
+2. Set the environment variables in the hosting dashboard.
+3. Set the build command to `bun run build` (or `npm run build`) and the output directory to `dist`.
+4. For Netlify, add a `_redirects` file or `netlify.toml` rule so all paths return `index.html`:
+
+   ```
+   /* /index.html 200
+   ```
+
+### GitHub Pages
+
+1. Set the base path for your repo subpath:
+
+   ```bash
+   VITE_BASE=/your-repo-name/ bun run build
+   ```
+
+2. Publish the `dist/` folder to the `gh-pages` branch.
+3. `public/404.html` is included — it preserves deep links so `BrowserRouter` can resolve them on load. Adjust `segmentCount` inside that file if your base has more than one path segment.
+
+---
+
+## Architecture Decisions
+
+### Feature-first module layout
+
+Each feature (`auth`, `blogs`, `bookmarks`, `editor`, `theme`) owns its Zustand store, components, and hooks. Pages compose features — features never import from pages. `components/ui/` never imports from features. This keeps the dependency graph acyclic and makes individual features easy to test or replace.
+
+### Zustand with optimistic updates
+
+Every mutation follows the same pattern:
+
+```
+1. Update Zustand state immediately  →  UI responds in <1 frame
+2. Fire async Supabase call
+3. On error: roll back Zustand state + show toast
+```
+
+This means the editor, like button, and bookmarks all feel instant even on slow connections.
+
+### All IDs are `text`
+
+Supabase defaults to `uuid` columns. This app generates IDs client-side using `crypto.randomUUID()` (via the `uuid` package) and passes them as plain strings. Using `text` PK columns means zero casting between JS and Postgres — a `uuid::text` mismatch was the root cause of the original `increment_blog_views` bug fixed in the schema.
+
+### Google auth without Supabase Auth
+
+The app receives a Google ID token (JWT) in the browser, decodes the payload (`sub`, `email`, `name`, `picture`) without a backend round-trip, and upserts the user row directly in Supabase. This keeps the architecture simple and avoids the need for server-side session management. The trade-off is that RLS policies can't use `auth.uid()` — they are intentionally open, with security enforced by the `RequireAuth` component.
+
+### Block-based content model
+
+Blog content is stored as a `jsonb` array of `Block` objects:
+
+```ts
+interface Block {
+  id: string;        // UUID
+  type: BlockType;   // "paragraph" | "h1" | "image" | "code" | …
+  content: string;
+  meta?: Record<string, unknown>;  // url, language, checked, style, …
+}
+```
+
+This is more flexible than Markdown (structured embeds, per-block styling, drag-and-drop reorder) and simpler than a full ProseMirror document tree.
+
+---
+
+## Local Storage Usage
+
+`localStorage` is used for lightweight persistence that doesn't need a server round-trip:
+
+| Key | Shape | When used |
+|---|---|---|
+| `mc.auth.v1` | `AuthSession` (user + JWT) | Restores session on page reload |
+| `mc.bookmarks.v1` | `string[]` (blog IDs) | Fallback for unauthenticated bookmarks |
+| `mc.history.v1` | `string[]` (last 50 read blog IDs) | Reading history |
+| `mc.theme.v1` | `"light" \| "dark" \| "system"` | Theme preference |
+
+All values are wrapped by [`storage/crypto.ts`](src/storage/crypto.ts) using `enc:v1:<base64(json)>` — this is **obfuscation, not encryption**. It prevents casual inspection in DevTools but provides no real security guarantee. The interface is intentionally symmetric so it can be upgraded to `AES-GCM` (WebCrypto) if a server-supplied key becomes available.
+
+Blogs, collaborators, likes, and user profiles are **not** stored in localStorage — they live exclusively in Supabase.
+
+---
+
+## Accessibility & Performance
+
+- Semantic HTML landmarks: `<header>`, `<main>`, `<footer>`, `<nav>`, `<article>`
+- All icon-only buttons carry `aria-label`; decorative icons carry `aria-hidden="true"`
+- Radix UI primitives provide full keyboard navigation, focus management, and ARIA roles out of the box
+- All routes are code-split with `React.lazy` + `<Suspense>` — the initial bundle only loads the shell and the current route
+- `loading="lazy"` on all non-critical images
+- `min-h-dvh` for correct mobile viewport height (avoids the iOS Safari address-bar jump)
+- Reading progress bar uses a passive scroll listener — no layout thrash
+- Optimistic UI throughout — every mutation is reflected instantly without waiting for the network
+
+---
 
 ## Roadmap
 
-- Additional editor blocks (tables, callouts, footnotes, tweet/gist embeds).
-- Full-text search with lunr.
-- Monaco integration for the code block.
-- Reading progress persistence + resume.
-- MFA (TOTP) once a backend exists.
-
-
-
-## Architecture at a glance
-```
-App start
-  └── DataBootstrap
-        ├── fetchBlogs()         → SELECT published blogs  (public)
-        └── fetchBookmarks()     → SELECT bookmarks        (if logged in)
-
-Google Sign-in
-  └── loginWithGoogleCredential()
-        ├── UPSERT users row
-        ├── SELECT full profile (bio/social)
-        ├── fetchBlogs(userId)   → +user's drafts/archived
-        └── fetchBookmarks(userId)
-
-Write / Edit
-  └── create() / updateBlocks() / setStatus()
-        ├── Optimistic Zustand update (instant UI)
-        └── INSERT / UPDATE blogs row
-
-views & likes
-  └── increment_blog_views() / increment_blog_likes()  → Postgres RPC (atomic)
-```
+- [ ] Full-text search via Postgres `tsvector` (move filtering server-side for large datasets)
+- [ ] Notifications (new likes, new collaborator invites)
+- [ ] Comment threads per story
+- [ ] Reader history page (already tracked in `mc.history.v1`)
+- [ ] Story series / collections
+- [ ] SEO meta tags and Open Graph images per story
+- [ ] Monaco editor integration for the code block (syntax highlighting)
+- [ ] MFA / 2FA (requires a real backend session)
+- [ ] Supabase Auth migration path (swap open RLS for `auth.uid()` policies)
