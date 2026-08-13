@@ -1,8 +1,9 @@
 # Binary Mind (Medium Clone)
-<img width="3304" height="1709" alt="BMind" src="https://github.com/user-attachments/assets/7c726b93-9bb8-4f13-9747-8541d4bd9da4" />
+<img width="1092" height="569" alt="image" src="https://github.com/user-attachments/assets/5cc770d3-d2f6-45af-8c81-08b8d3b21490" />
+<!-- <img width="3304" height="1709" alt="BMind" src="https://github.com/user-attachments/assets/7c726b93-9bb8-4f13-9747-8541d4bd9da4" /> -->
 
 
-A production-grade **Medium-inspired** writing and reading platform. Stories are persisted in **Supabase** (PostgreSQL), authentication is handled via **Google Identity Services**, and the frontend is a fully code-split React 19 SPA.
+A production-grade **`Medium-inspired`** writing and reading platform. The Stories are persisted in **`Supabase`** (PostgreSQL), authentication is handled via **`Google Identity Services`**, and the frontend is a fully code-split `React 19 SPA`.
 
 ---
 
