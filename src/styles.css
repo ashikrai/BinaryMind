@@ -1,0 +1,298 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root and .dark blocks define the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root (light value) and .dark (dark value)
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.129 0.042 264.695);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0.042 264.695);
+  --primary: oklch(0.208 0.042 265.755);
+  --primary-foreground: oklch(0.984 0.003 247.858);
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.968 0.007 247.896);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.704 0.04 256.788);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-primary: oklch(0.208 0.042 265.755);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.968 0.007 247.896);
+  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.704 0.04 256.788);
+}
+
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+/* ============================================================
+ * iOS "Liquid Glass" surface treatment
+ * Applied to floating surfaces (popovers, dropdowns, dialogs,
+ * sheets, tooltips, menus, command palette) and to cards.
+ * Uses translucent tinted backgrounds + backdrop blur/saturation
+ * + a hairline border + an inner highlight for the glass edge.
+ * ============================================================ */
+@layer components {
+  :root {
+    --glass-bg: color-mix(in oklab, var(--color-popover) 62%, transparent);
+    --glass-bg-strong: color-mix(in oklab, var(--color-popover) 78%, transparent);
+    --glass-border: color-mix(in oklab, var(--color-foreground) 14%, transparent);
+    --glass-highlight: color-mix(in oklab, white 55%, transparent);
+    --glass-shadow: 0 10px 30px -12px color-mix(in oklab, var(--color-foreground) 35%, transparent),
+                    0 2px 8px -2px color-mix(in oklab, var(--color-foreground) 20%, transparent);
+    --card-tint: color-mix(in oklab, var(--color-primary) 4%, var(--color-card));
+  }
+  .dark {
+    --glass-bg: color-mix(in oklab, var(--color-popover) 55%, transparent);
+    --glass-bg-strong: color-mix(in oklab, var(--color-popover) 72%, transparent);
+    --glass-border: color-mix(in oklab, white 16%, transparent);
+    --glass-highlight: color-mix(in oklab, white 18%, transparent);
+    --glass-shadow: 0 10px 40px -8px rgb(0 0 0 / 0.6),
+                    0 2px 10px -2px rgb(0 0 0 / 0.4);
+    --card-tint: color-mix(in oklab, white 4%, var(--color-card));
+  }
+
+  /* Floating surfaces – target both classic shadcn class-based components
+     and the newer data-slot API, plus Radix role attributes so any
+     Kibo UI / Radix-based popover, menu, dialog, sheet, drawer, tooltip,
+     command palette, or select gets the same iOS liquid-glass treatment. */
+  .bg-popover,
+  [data-slot="popover-content"],
+  [data-slot="dropdown-menu-content"],
+  [data-slot="select-content"],
+  [data-slot="context-menu-content"],
+  [data-slot="menubar-content"],
+  [data-slot="hover-card-content"],
+  [data-slot="tooltip-content"],
+  [data-slot="command"],
+  [data-slot="command-dialog"],
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"],
+  [data-slot="sheet-content"],
+  [data-radix-popper-content-wrapper] > [role="menu"],
+  [data-radix-popper-content-wrapper] > [role="listbox"],
+  [data-radix-popper-content-wrapper] > [role="dialog"],
+  [role="tooltip"],
+  [role="dialog"][data-state],
+  [role="alertdialog"][data-state],
+  [data-vaul-drawer],
+  [data-vaul-drawer-content],
+  [cmdk-root],
+  [cmdk-dialog] {
+    background-color: var(--glass-bg) !important;
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid var(--glass-border) !important;
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1px 0 0 var(--glass-highlight);
+  }
+
+  /* Menubar trigger row (uses bg-background instead of bg-popover) */
+  [data-slot="menubar"],
+  .bg-background[role="menubar"] {
+    background-color: var(--glass-bg) !important;
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border: 1px solid var(--glass-border) !important;
+  }
+
+  [data-slot="tooltip-content"],
+  [role="tooltip"] {
+    background-color: var(--glass-bg-strong) !important;
+  }
+
+  /* Dialog / alert-dialog overlay – lighter scrim so the glass reads */
+  [data-slot="dialog-overlay"],
+  [data-slot="alert-dialog-overlay"] {
+    background-color: color-mix(in oklab, var(--color-foreground) 35%, transparent) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+
+  /* Cards – tinted surface distinct from the page background */
+  .bg-card,
+  [data-slot="card"] {
+    background-color: var(--card-tint) !important;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 1px 0 0 var(--glass-highlight) inset,
+                0 4px 16px -8px color-mix(in oklab, var(--color-foreground) 18%, transparent);
+  }
+
+  /* Sticky header gets a subtle glass sheen too */
+  header.sticky {
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    background-color: color-mix(in oklab, var(--color-background) 65%, transparent) !important;
+    border-bottom: 1px solid var(--glass-border);
+  }
+}
+
+
+/* Inline `code` highlight — used in editor (live) and renderer */
+@layer components {
+  .inline-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    background-color: color-mix(in oklab, var(--color-foreground) 10%, transparent);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 0.05em 0.35em;
+    font-size: 0.9em;
+    color: var(--color-foreground);
+  }
+
+  /* Inline hyperlink — used in both editor (contenteditable) and reader */
+  .inline-link {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+  .inline-link:hover {
+    opacity: 0.8;
+  }
+
+  .inline-editable {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    outline: none;
+  }
+  .inline-editable:empty::before {
+    content: attr(data-placeholder);
+    color: var(--color-muted-foreground);
+    pointer-events: none;
+  }
+}
+
+/* When a block sets a custom fontFamily on its container, force all
+ * descendants (including Tailwind font-serif/font-mono classes) to inherit
+ * it instead of re-declaring their own family.
+ * Must be in @layer utilities so it wins over Tailwind's font-serif utility. */
+@layer utilities {
+  .mc-font-override {
+    font-family: var(--mc-block-font) !important;
+  }
+  .mc-font-override * {
+    font-family: inherit !important;
+  }
+}
+
