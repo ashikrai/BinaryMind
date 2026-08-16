@@ -1,4 +1,6 @@
 # Binary Mind (Medium Clone)
+Live-Demo: [Binary-mind](https://binary-mind-01.lovable.app)
+
 <img width="1092" height="569" alt="image" src="https://github.com/user-attachments/assets/5cc770d3-d2f6-45af-8c81-08b8d3b21490" />
 <!-- <img width="3304" height="1709" alt="BMind" src="https://github.com/user-attachments/assets/7c726b93-9bb8-4f13-9747-8541d4bd9da4" /> -->
 
