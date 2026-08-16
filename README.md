@@ -65,6 +65,17 @@ A production-grade **`Medium-inspired`** writing and reading platform. The Stori
 - **Duplicate** — clone any story into a new draft in one click
 - **Delete** — permanent delete with confirmation dialog
 
+### Add Medium Account
+You need to generate your Medium Integration token. [Generate Integration Token ](https://medium.com/me/settings/security)
+Once generated copy the token and add in the profile section.
+<img width="983" height="358" alt="image" src="https://github.com/user-attachments/assets/4504d037-3379-432f-bb2a-cba35af7f012" />
+
+#### Successfully Imported
+<img width="858" height="511" alt="image" src="https://github.com/user-attachments/assets/518fbf57-11ea-4591-8b21-37bb2b3aaae5" />
+All imported posts can be access here:
+<img width="872" height="491" alt="image" src="https://github.com/user-attachments/assets/57d86572-3850-4cb8-9150-061249d9d3f2" />
+
+
 ### My Stories dashboard
 <img width="1088" height="566" alt="image" src="https://github.com/user-attachments/assets/653438b6-44cd-4552-9c1b-a198e4bbc9ce" />
 
