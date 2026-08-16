@@ -72,6 +72,7 @@ Once generated copy the token and add in the profile section.
 
 #### Successfully Imported
 <img width="858" height="511" alt="image" src="https://github.com/user-attachments/assets/518fbf57-11ea-4591-8b21-37bb2b3aaae5" />
+
 All imported posts can be access here:
 <img width="872" height="491" alt="image" src="https://github.com/user-attachments/assets/57d86572-3850-4cb8-9150-061249d9d3f2" />
 
