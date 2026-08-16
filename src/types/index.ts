@@ -87,6 +87,12 @@ export interface UserProfile {
     website?: string;
   };
   joinedAt: string;
+  /**
+   * Which avatar / display-name source to use.
+   * "google"  → use the Google profile picture and name
+   * "medium"  → use the Medium profile picture and name (requires connected Medium account)
+   */
+  avatarSource?: "google" | "medium";
 }
 
 export interface AuthSession {

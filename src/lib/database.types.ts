@@ -16,6 +16,12 @@ export interface Database {
           social_github: string | null;
           social_website: string | null;
           joined_at: string;
+          medium_user_id: string | null;
+          medium_username: string | null;
+          medium_name: string | null;
+          medium_avatar_url: string | null;
+          medium_token: string | null;
+          medium_connected_at: string | null;
         };
         Insert: {
           id: string;
@@ -27,6 +33,12 @@ export interface Database {
           social_github?: string | null;
           social_website?: string | null;
           joined_at?: string;
+          medium_user_id?: string | null;
+          medium_username?: string | null;
+          medium_name?: string | null;
+          medium_avatar_url?: string | null;
+          medium_token?: string | null;
+          medium_connected_at?: string | null;
         };
         Update: {
           email?: string;
@@ -36,6 +48,12 @@ export interface Database {
           social_twitter?: string | null;
           social_github?: string | null;
           social_website?: string | null;
+          medium_user_id?: string | null;
+          medium_username?: string | null;
+          medium_name?: string | null;
+          medium_avatar_url?: string | null;
+          medium_token?: string | null;
+          medium_connected_at?: string | null;
         };
       };
       blogs: {
@@ -131,6 +149,41 @@ export interface Database {
           added_at?: string;
         };
         Update: Record<string, never>;
+      };
+      medium_imported_posts: {
+        Row: {
+          id: string;
+          user_id: string;
+          medium_post_id: string;
+          medium_url: string | null;
+          push_status: "none" | "pending" | "pushed";
+          imported_at: string;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          medium_post_id: string;
+          medium_url?: string | null;
+          push_status?: "none" | "pending" | "pushed";
+          imported_at?: string;
+        };
+        Update: {
+          push_status?: "none" | "pending" | "pushed";
+        };
+      };
+    };
+    Functions: {
+      medium_api_get: {
+        Args: { p_path: string; p_token: string };
+        Returns: unknown;
+      };
+      medium_api_post: {
+        Args: { p_path: string; p_token: string; p_body: unknown };
+        Returns: unknown;
+      };
+      medium_fetch_url: {
+        Args: { p_url: string };
+        Returns: unknown;
       };
     };
   };

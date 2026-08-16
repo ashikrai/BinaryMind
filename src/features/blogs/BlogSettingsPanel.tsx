@@ -5,6 +5,7 @@ import type { Blog } from "@/types";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,6 +50,7 @@ export function BlogSettingsPanel({
   const setCollaborators = useBlogs((s) => s.setCollaborators);
 
   const [coverImage, setCoverImage] = useState(blog.coverImage ?? "");
+  const [description, setDescription] = useState(blog.description ?? "");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>(blog.tags.slice(0, MAX_TAGS));
   const [emailInput, setEmailInput] = useState("");
@@ -64,6 +66,7 @@ export function BlogSettingsPanel({
   useEffect(() => {
     if (open) {
       setCoverImage(blog.coverImage ?? "");
+      setDescription(blog.description ?? "");
       setTags(blog.tags.slice(0, MAX_TAGS));
       setEmails((blog.collaborators ?? []).map((c) => c.email));
       setTagInput("");
@@ -139,7 +142,11 @@ export function BlogSettingsPanel({
   const handleSave = async () => {
     setSaving(true);
     try {
-      await update(blog.id, { coverImage: coverImage.trim() || undefined, tags });
+      await update(blog.id, {
+        coverImage: coverImage.trim() || undefined,
+        description: description.trim(),
+        tags,
+      });
       await setCollaborators(blog.id, emails);
       if (publishMode) {
         await setStatus(blog.id, "published");
@@ -167,6 +174,22 @@ export function BlogSettingsPanel({
         </SheetHeader>
 
         <div className="flex-1 space-y-6 overflow-y-auto pr-1">
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="blog-description">Description</Label>
+            <Textarea
+              id="blog-description"
+              placeholder="A short summary shown in the feed and search results…"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              maxLength={300}
+            />
+            <p className="text-right text-xs text-muted-foreground">
+              {description.length}/300
+            </p>
+          </div>
+
           {/* Cover image */}
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">
