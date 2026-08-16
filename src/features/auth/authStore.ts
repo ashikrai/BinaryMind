@@ -13,6 +13,12 @@ interface AuthState {
   loginWithGoogleCredential: (jwt: string) => Promise<void>;
   logout: () => void;
   updateProfile: (patch: Partial<UserProfile>) => Promise<void>;
+  /**
+   * Switch the active avatar / display-name between Google and Medium.
+   * Persists the preference to the users row (avatar_source column) and
+   * updates the in-memory session immediately so all UI reacts.
+   */
+  setAvatarSource: (source: "google" | "medium") => Promise<void>;
 }
 
 interface GoogleJwtPayload {
@@ -100,16 +106,26 @@ export const useAuth = create<AuthState>((set, get) => ({
       .single();
 
     if (stored) {
+      const avatarSource: "google" | "medium" = stored.avatar_source ?? "google";
+      // When the user prefers Medium avatar, swap in the Medium profile values.
+      const displayAvatar = avatarSource === "medium" && stored.medium_avatar_url
+        ? stored.medium_avatar_url
+        : stored.avatar ?? user.avatar;
+      const displayName = avatarSource === "medium" && stored.medium_name
+        ? stored.medium_name
+        : stored.name ?? user.name;
+
       const fullUser: UserProfile = {
         ...user,
-        // Prefer the name stored in DB (user may have customised it).
-        name: stored.name ?? user.name,
+        name: displayName,
+        avatar: displayAvatar ?? undefined,
         bio: stored.bio ?? undefined,
         social: {
           twitter: stored.social_twitter ?? undefined,
           github: stored.social_github ?? undefined,
           website: stored.social_website ?? undefined,
         },
+        avatarSource,
       };
       const fullSession: AuthSession = { ...session, user: fullUser };
       persistSession(fullSession);
@@ -169,6 +185,38 @@ export const useAuth = create<AuthState>((set, get) => ({
   logout: () => {
     persistSession(null);
     set({ session: null });
+  },
+
+  setAvatarSource: async (source) => {
+    const session = get().session;
+    if (!session) return;
+
+    // Persist preference to DB
+    await db.from("users").update({ avatar_source: source }).eq("id", session.user.id);
+
+    // Re-read Medium columns to get the latest avatar/name for that source
+    const { data: stored } = await db
+      .from("users")
+      .select("name, avatar, medium_name, medium_avatar_url")
+      .eq("id", session.user.id)
+      .single();
+
+    const displayAvatar = source === "medium" && stored?.medium_avatar_url
+      ? stored.medium_avatar_url
+      : stored?.avatar ?? session.user.avatar;
+    const displayName = source === "medium" && stored?.medium_name
+      ? stored.medium_name
+      : stored?.name ?? session.user.name;
+
+    const next: UserProfile = {
+      ...session.user,
+      avatar: displayAvatar ?? undefined,
+      name: displayName,
+      avatarSource: source,
+    };
+    const nextSession: AuthSession = { ...session, user: next };
+    persistSession(nextSession);
+    set({ session: nextSession });
   },
 }));
 

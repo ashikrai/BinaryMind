@@ -33,7 +33,6 @@ const queryClient = new QueryClient({
 });
 
 const basename = import.meta.env.BASE_URL.replace(/\/$/, "") || "/";
-
 /**
  * Boots data on app start:
  * - Always fetches published blogs (public feed works without login).

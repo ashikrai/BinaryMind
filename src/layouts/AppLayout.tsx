@@ -101,6 +101,9 @@ export function AppLayout() {
                     <DropdownMenuItem onClick={() => navigate("/my-stories?tab=collabs")}>
                       Collaborations
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/my-stories?tab=medium-imports")}>
+                      Medium Imports
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/settings")}>
                       Settings
                     </DropdownMenuItem>
