@@ -9,7 +9,7 @@
 import { create } from "zustand";
 import { v4 as uuid } from "uuid";
 import { supabase } from "@/lib/supabase";
-import { mediumHtmlToBlocks, blocksToMediumHtml } from "./mediumConverter";
+import { mediumHtmlToTiptapHtml, blocksToMediumHtml } from "./mediumConverter";
 import type { Blog } from "@/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -250,22 +250,23 @@ export const useMedium = create<MediumState>((set, get) => ({
     const coverImage: string | undefined = rssMeta?.thumbnail || undefined;
 
     const tags: string[] = rssMeta?.categories ?? [];
-    let html: string;
+    let tiptapHtml: string;
 
     if (rssMeta?.contentHtml) {
-      // RSS gives us the full article HTML — use it directly, no extra fetch needed.
-      html = rssMeta.contentHtml;
+      // RSS gives us the full article HTML — convert it directly to TipTap HTML.
+      tiptapHtml = mediumHtmlToTiptapHtml(rssMeta.contentHtml);
     } else {
       // Fallback: should not normally be reached for RSS-sourced imports.
-      html = `<p>Imported from <a href="${url}">${url}</a> — please update the content manually.</p>`;
+      tiptapHtml = `<h1>${title}</h1><p>Imported from <a href="${url}">${url}</a> — please update the content manually.</p>`;
     }
 
-    const contentBlocks = mediumHtmlToBlocks(html);
+    // Prepend the title as an <h1> if the content doesn't already start with one
+    if (!tiptapHtml.trimStart().startsWith("<h1>")) {
+      tiptapHtml = `<h1>${title}</h1>\n${tiptapHtml}`;
+    }
 
-    const hasTitle = contentBlocks.some((b) => b.type === "title");
-    const blocks = hasTitle
-      ? contentBlocks
-      : [{ id: uuid(), type: "title" as const, content: title }, ...contentBlocks];
+    // Store as a single html block — this feeds directly into NotionEditor's `initial` prop
+    const blocks = [{ id: uuid(), type: "html" as const, content: tiptapHtml }];
 
     const { useBlogs } = await import("@/features/blogs/blogStore");
     const blog = await useBlogs.getState().create(userId, authorName, authorAvatar, {

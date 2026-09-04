@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { PenSquare, Search, Bell, Bookmark, LogOut, User } from "lucide-react";
+import { PenSquare, Search, Bell, Bookmark, LogOut, User, BookOpen } from "lucide-react";
 import { useAuth } from "@/features/auth/authStore";
 import { Button } from "@/components/ui/button";
 import { useCallback } from "react";
@@ -59,6 +59,15 @@ export function AppLayout() {
                 >
                   <PenSquare className="h-4 w-4" />
                   Write
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden gap-2 sm:inline-flex"
+                  onClick={() => navigate("/my-stories")}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  My Stories
                 </Button>
                 <Button variant="ghost" size="icon" asChild aria-label="Bookmarks">
                   <Link to="/bookmarks">

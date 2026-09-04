@@ -1,15 +1,16 @@
 /**
  * mediumConverter.ts
  *
- * Converts between Medium's HTML-based post content and BinaryMind's
- * Block[] format — both ways.
+ * Converts between Medium's HTML-based post content and the TipTap editor's
+ * HTML format used by BinaryMind.
  *
- * Medium posts come back from the Medium API as rendered HTML
- * (the `content.html` field).  We parse that HTML with DOMParser and
- * walk the element tree, emitting typed Block objects.
+ * Medium posts come back from the RSS feed as rendered HTML
+ * (content:encoded).  We parse that HTML with DOMParser and emit a clean
+ * HTML string that TipTap understands — keeping real HTML tags so inline
+ * formatting (bold, italic, links, code) is preserved faithfully.
  *
- * When pushing to Medium we do the inverse: serialize Block[] → HTML string
- * and use the Medium REST API to create a post with contentFormat "html".
+ * When pushing to Medium we do the inverse: read the stored HTML block and
+ * POST it directly to the Medium v1 API with contentFormat "html".
  */
 
 import { v4 as uuid } from "uuid";
@@ -26,9 +27,8 @@ function el(tag: string, attrs: Record<string, string>, innerHTML: string): stri
   return `<${tag}${attrStr}>${innerHTML}</${tag}>`;
 }
 
-/** Strip all HTML tags from a string — used for block.content in text blocks. */
+/** Strip all HTML tags from a string — used for plain-text extraction. */
 function stripHtml(html: string): string {
-  // Preserve line breaks before stripping
   return html
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/li>/gi, "\n")
@@ -42,7 +42,231 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-/** Preserve basic inline markup as BinaryMind inline markers. */
+/**
+ * Keep only the inline HTML tags that TipTap understands, stripping everything
+ * else.  Block-level tags (div, span wrappers, etc.) are removed; semantic
+ * inline tags are kept.
+ */
+function sanitizeInline(html: string): string {
+  // Normalise bold/italic shorthands
+  let out = html
+    .replace(/<b(\s[^>]*)?>([^<]*)<\/b>/gi, "<strong>$2</strong>")
+    .replace(/<i(\s[^>]*)?>([^<]*)<\/i>/gi, "<em>$2</em>")
+    .replace(/<br\s*\/?>/gi, " ");
+
+  // Strip every tag except the ones TipTap inline marks support
+  out = out.replace(/<\/?(?!strong|em|u|s|code|a|mark)[a-z][^>]*>/gi, "");
+
+  // Decode common HTML entities
+  out = out
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+  return out.trim();
+}
+
+// ---------------------------------------------------------------------------
+// Medium HTML → TipTap-compatible HTML string
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert the HTML string from a Medium RSS `content:encoded` field into a
+ * clean HTML string that the TipTap / NotionEditor understands.
+ *
+ * Supported Medium elements:
+ *   h1 / h2 / h3 / h4    → <h1> / <h2> / <h3>
+ *   p                     → <p> (with inline formatting preserved)
+ *   blockquote            → <blockquote>
+ *   pre > code            → <pre><code class="language-*">
+ *   ul > li               → <ul><li>
+ *   ol > li               → <ol><li>
+ *   figure > img          → <img src="…"> (image link only, no upload)
+ *   figure > iframe       → <p><a href="…"> for embeds
+ *   hr                    → <hr>
+ *
+ * The result is stored as a single `{ type: "html", content }` block so it
+ * feeds directly into the NotionEditor `initial` prop without any lossy
+ * round-trip through the legacy Block[] intermediate format.
+ */
+export function mediumHtmlToTiptapHtml(html: string): string {
+  if (!html?.trim()) return "";
+
+  // In SSR / test environments without DOMParser fall back to a regex pass.
+  if (typeof DOMParser === "undefined") return mediumHtmlToTiptapHtmlRegex(html);
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const parts: string[] = [];
+
+  for (const child of Array.from(doc.body.children)) {
+    const tag = child.tagName.toLowerCase();
+    const classList = child.classList;
+    const innerHtml = child.innerHTML;
+
+    // ── Headings ────────────────────────────────────────────────────────────
+    if (tag === "h1") {
+      parts.push(`<h1>${sanitizeInline(innerHtml)}</h1>`);
+      continue;
+    }
+    if (tag === "h2") {
+      parts.push(`<h2>${sanitizeInline(innerHtml)}</h2>`);
+      continue;
+    }
+    if (tag === "h3" || tag === "h4") {
+      parts.push(`<h3>${sanitizeInline(innerHtml)}</h3>`);
+      continue;
+    }
+
+    // ── Divider ─────────────────────────────────────────────────────────────
+    if (tag === "hr") {
+      parts.push("<hr />");
+      continue;
+    }
+
+    // ── Code block ──────────────────────────────────────────────────────────
+    if (tag === "pre") {
+      const codeEl = child.querySelector("code");
+      const lang = codeEl?.className.replace(/.*language-(\S+).*/, "$1") ?? "";
+      const codeText = (codeEl ? codeEl.textContent : child.textContent) ?? "";
+      const langAttr = lang ? ` class="language-${lang}"` : "";
+      parts.push(`<pre><code${langAttr}>${escHtml(codeText)}</code></pre>`);
+      continue;
+    }
+
+    // ── Blockquote ──────────────────────────────────────────────────────────
+    if (tag === "blockquote") {
+      // Flatten nested <p> tags inside blockquote for TipTap compatibility
+      const inner = sanitizeInline(child.querySelector("p")?.innerHTML ?? innerHtml);
+      parts.push(`<blockquote><p>${inner}</p></blockquote>`);
+      continue;
+    }
+
+    // ── Lists ────────────────────────────────────────────────────────────────
+    if (tag === "ul") {
+      const items = Array.from(child.querySelectorAll("li"))
+        .map((li) => `<li><p>${sanitizeInline(li.innerHTML)}</p></li>`)
+        .join("");
+      if (items) parts.push(`<ul>${items}</ul>`);
+      continue;
+    }
+    if (tag === "ol") {
+      const items = Array.from(child.querySelectorAll("li"))
+        .map((li) => `<li><p>${sanitizeInline(li.innerHTML)}</p></li>`)
+        .join("");
+      if (items) parts.push(`<ol>${items}</ol>`);
+      continue;
+    }
+
+    // ── Figure (image / embed) ───────────────────────────────────────────────
+    if (tag === "figure") {
+      const img = child.querySelector("img");
+      const iframe = child.querySelector("iframe");
+
+      if (iframe) {
+        const src = iframe.getAttribute("src") ?? "";
+        const embedHtml = embedToHtml(src);
+        if (embedHtml) { parts.push(embedHtml); continue; }
+      }
+
+      if (img) {
+        // Use data-src as fallback (Medium lazy-loads with data-src)
+        const src = img.getAttribute("src") ?? img.getAttribute("data-src") ?? "";
+        const alt = escAttr(img.getAttribute("alt") ?? "");
+        if (src) parts.push(`<img src="${escAttr(src)}" alt="${alt}" />`);
+        continue;
+      }
+      continue;
+    }
+
+    // ── Paragraph ────────────────────────────────────────────────────────────
+    if (tag === "p") {
+      const img = child.querySelector("img");
+      const iframe = child.querySelector("iframe");
+
+      if (iframe) {
+        const src = iframe.getAttribute("src") ?? "";
+        const embedHtml = embedToHtml(src);
+        if (embedHtml) { parts.push(embedHtml); continue; }
+      }
+
+      // Lone image inside <p>
+      if (img && child.children.length === 1) {
+        const src = img.getAttribute("src") ?? img.getAttribute("data-src") ?? "";
+        const alt = escAttr(img.getAttribute("alt") ?? "");
+        if (src) parts.push(`<img src="${escAttr(src)}" alt="${alt}" />`);
+        continue;
+      }
+
+      // Mixtape embed (external link preview) → plain link paragraph
+      if (classList.contains("graf--mixtapeEmbed")) {
+        const link = child.querySelector("a");
+        const url = link?.getAttribute("href") ?? "";
+        if (url) {
+          parts.push(`<p><a href="${escAttr(url)}">${escHtml(url)}</a></p>`);
+          continue;
+        }
+      }
+
+      const text = sanitizeInline(innerHtml);
+      if (text) parts.push(`<p>${text}</p>`);
+      continue;
+    }
+
+    // ── Fallback: treat as paragraph ─────────────────────────────────────────
+    const text = sanitizeInline(innerHtml);
+    if (text) parts.push(`<p>${text}</p>`);
+  }
+
+  return parts.join("\n");
+}
+
+/** Escape a string for use inside an HTML attribute value. */
+function escAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Escape a string for use as HTML text content. */
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Convert a known embed src URL (YouTube, Twitter/X, Gist) to a TipTap-
+ * compatible HTML snippet.  Unknown URLs return null.
+ */
+function embedToHtml(src: string): string | null {
+  if (!src) return null;
+  if (/youtu\.?be/.test(src)) {
+    return `<p><a href="${escAttr(src)}">${escHtml(src)}</a></p>`;
+  }
+  if (/twitter\.com|x\.com/.test(src)) {
+    return `<p><a href="${escAttr(src)}">${escHtml(src)}</a></p>`;
+  }
+  if (/gist\.github\.com/.test(src)) {
+    return `<p><a href="${escAttr(src)}">${escHtml(src)}</a></p>`;
+  }
+  return null;
+}
+
+/** Regex-based fallback for environments without DOMParser (e.g. SSR / tests). */
+function mediumHtmlToTiptapHtmlRegex(html: string): string {
+  // Best-effort: strip Medium wrapper divs and return the cleaned HTML directly.
+  return html
+    .replace(/<\/?(div|section|article|figure|figcaption)[^>]*>/gi, "")
+    .replace(/<h4([^>]*)>/gi, "<h3$1>")
+    .replace(/<\/h4>/gi, "</h3>")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
+// ---------------------------------------------------------------------------
+// Legacy Block[] helpers (kept for the blocksToMediumHtml push path)
+// ---------------------------------------------------------------------------
+
+/** Preserve basic inline markup as BinaryMind inline markers (legacy, push-only). */
 function htmlToInline(html: string): string {
   return html
     .replace(/<strong>(.*?)<\/strong>/gi, "**$1**")
@@ -75,24 +299,13 @@ function makeBlock(type: BlockType, content: string, meta?: Record<string, unkno
 }
 
 // ---------------------------------------------------------------------------
-// Medium HTML → BinaryMind Block[]
+// Medium HTML → BinaryMind Block[] (legacy — kept for backwards compatibility)
 // ---------------------------------------------------------------------------
 
 /**
- * Parse the HTML string that Medium returns in `post.content.html` and
- * convert it to a BinaryMind Block array.
- *
- * Medium's HTML uses a small, well-known tag set:
- *   h1/h2/h3/h4  → headings
- *   p             → paragraph (may contain a lone <img> = image block)
- *   blockquote    → quote or pullquote
- *   pre > code    → code block
- *   ul > li       → bullet list
- *   ol > li       → numbered list
- *   figure        → image (with optional figcaption)
- *   hr            → divider
- *   iframe        → embed (YouTube / Twitter / Gist)
- *   .graf--mixtapeEmbed → bookmark card (external link preview)
+ * @deprecated Use `mediumHtmlToTiptapHtml` instead.  This function produces
+ * the old Block[] intermediate format which loses inline formatting when
+ * serialised back to HTML via blocksToHtml in EditBlog.
  */
 export function mediumHtmlToBlocks(html: string): Block[] {
   // SSR / Node fallback — parse with the browser's DOMParser when available.
@@ -139,7 +352,6 @@ export function mediumHtmlToBlocks(html: string): Block[] {
 
     // --- Blockquote ---
     if (tag === "blockquote") {
-      // Medium uses .graf--pullquote for large pull-quotes
       const type: BlockType = classList.contains("graf--pullquote") ? "pullquote" : "quote";
       blocks.push(makeBlock(type, htmlToInline(innerHtml)));
       continue;
@@ -182,7 +394,7 @@ export function mediumHtmlToBlocks(html: string): Block[] {
       continue;
     }
 
-    // --- Paragraph (may contain lone img / iframe / embed link) ---
+    // --- Paragraph ---
     if (tag === "p") {
       const img = child.querySelector("img");
       const iframe = child.querySelector("iframe");
@@ -200,7 +412,6 @@ export function mediumHtmlToBlocks(html: string): Block[] {
         continue;
       }
 
-      // Mixtape embed (external link preview) → bookmark block
       if (classList.contains("graf--mixtapeEmbed")) {
         const link = child.querySelector("a");
         const url = link?.getAttribute("href") ?? "";
@@ -212,7 +423,7 @@ export function mediumHtmlToBlocks(html: string): Block[] {
       continue;
     }
 
-    // --- Fallback: treat as paragraph ---
+    // --- Fallback ---
     const text = htmlToInline(innerHtml);
     if (text) blocks.push(makeBlock("paragraph", text));
   }
@@ -223,7 +434,6 @@ export function mediumHtmlToBlocks(html: string): Block[] {
 /** Regex-based fallback for environments without DOMParser (e.g. tests). */
 function parseMediumHtmlRegex(html: string): Block[] {
   const blocks: Block[] = [];
-  // Very basic: split on block-level tags and convert each to a paragraph.
   const paragraphs = html
     .replace(/<\/?(div|section|article)[^>]*>/gi, "")
     .split(/(?=<(?:h[1-4]|p|blockquote|pre|ul|ol|figure|hr)[^>]*>)/i);
@@ -242,7 +452,7 @@ function parseMediumHtmlRegex(html: string): Block[] {
   return blocks;
 }
 
-/** Recognise embed URLs (YouTube, Twitter/X, Gist) and return the matching block. */
+/** Recognise embed URLs (YouTube, Twitter/X, Gist) and return the matching Block. */
 function embedUrlToBlock(src: string): Block | null {
   if (/youtu\.?be/.test(src)) return makeBlock("youtube", src);
   if (/twitter\.com|x\.com/.test(src)) return makeBlock("tweet", src);
