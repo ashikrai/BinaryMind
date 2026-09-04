@@ -461,6 +461,7 @@ function TocSidebar({ headings, activeId }: { headings: TocHeading[]; activeId: 
   return (
     <div className="notion-toc">
       <div className="notion-toc-title"><Hash className="h-3.5 w-3.5" />On this page</div>
+      <div className="notion-toc-title">Type '/' for command, and ':' for emoji's</div>
       <nav>
         {headings.map((h) => (
           <button key={h.id} type="button"
@@ -520,6 +521,8 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
   const [tocHeadings, setTocHeadings] = useState<TocHeading[]>([]);
   const [activeTocId, setActiveTocId] = useState<string | null>(null);
   const editorAreaRef = useRef<HTMLDivElement>(null);
+  const dragHandleRef = useRef<HTMLDivElement>(null);
+  const tocUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * Update the drag handle to the top-level block element that the mouse is
@@ -590,7 +593,16 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
       const tag = el.tagName.toLowerCase();
       headings.push({ id, level: tag === "h1" ? 1 : tag === "h2" ? 2 : 3, text });
     });
-    setTocHeadings(headings);
+    // Skip the state update when the heading list hasn't actually changed
+    setTocHeadings((prev) => {
+      if (
+        prev.length === headings.length &&
+        prev.every((h, i) => h.id === headings[i].id && h.text === headings[i].text)
+      ) {
+        return prev;
+      }
+      return headings;
+    });
   }, []);
 
   // ── editor ────────────────────────────────────────────────────────────────
@@ -669,7 +681,13 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
         else setEmojiOpen(false);
       }
       onChange(e.getHTML());
-      setTimeout(() => updateToc(editorAreaRef.current?.querySelector(".notion-editor-content") ?? null), 60);
+      // Debounce ToC updates — heading text rarely changes on every keystroke,
+      // and setTocHeadings re-renders NotionEditor each time it fires
+      if (tocUpdateTimerRef.current) clearTimeout(tocUpdateTimerRef.current);
+      tocUpdateTimerRef.current = setTimeout(
+        () => updateToc(editorAreaRef.current?.querySelector(".notion-editor-content") ?? null),
+        500,
+      );
     },
     onSelectionUpdate({ editor: e }) {
       const sel = e.state.selection;
@@ -682,7 +700,12 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
         if (domNode instanceof HTMLElement && areaRect) {
           const rect = domNode.getBoundingClientRect();
           const midY = rect.top + rect.height / 2 - areaRect.top;
-          setDragHandlePos({ nodePos, top: midY });
+          // Only update state when the position actually changes
+          setDragHandlePos((prev) =>
+            prev?.nodePos === nodePos && Math.abs((prev?.top ?? 0) - midY) < 1
+              ? prev
+              : { nodePos, top: midY }
+          );
         }
         return;
       }
@@ -690,16 +713,31 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
       // TextSelection: use the $from resolved position
       const { $from } = sel;
       const nodePos = $from.start($from.depth) - 1;
-      if (nodePos < 0) { setDragHandlePos(null); return; }
+      if (nodePos < 0) {
+        setDragHandlePos((prev) => (prev === null ? prev : null));
+        return;
+      }
       const coords = e.view.coordsAtPos($from.pos);
       const areaRect = editorAreaRef.current?.getBoundingClientRect();
-      if (areaRect) setDragHandlePos({ nodePos, top: coords.top - areaRect.top });
+      if (areaRect) {
+        const top = coords.top - areaRect.top;
+        // Only update state when nodePos or top changes meaningfully
+        setDragHandlePos((prev) =>
+          prev?.nodePos === nodePos && Math.abs((prev?.top ?? 0) - top) < 1
+            ? prev
+            : { nodePos, top }
+        );
+      }
     },
   });
 
-  // Initial ToC scan
+  // Initial ToC scan + timer cleanup on unmount
   useEffect(() => {
-    setTimeout(() => updateToc(editorAreaRef.current?.querySelector(".notion-editor-content") ?? null), 200);
+    const t = setTimeout(() => updateToc(editorAreaRef.current?.querySelector(".notion-editor-content") ?? null), 200);
+    return () => {
+      clearTimeout(t);
+      if (tocUpdateTimerRef.current) clearTimeout(tocUpdateTimerRef.current);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -962,11 +1000,19 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
         {/* ── Drag handle ── */}
         {dragHandlePos !== null && (
           <div
+            ref={dragHandleRef}
             className="notion-drag-handle"
             style={{ top: dragHandlePos.top }}
             draggable
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onMouseLeave={(e) => {
+              if (isDraggingBlock.current) return;
+              // Hide only when leaving to outside the editor area too
+              const related = e.relatedTarget as Node | null;
+              if (editorAreaRef.current && related && editorAreaRef.current.contains(related)) return;
+              setDragHandlePos(null);
+            }}
             title="Drag to reorder"
           >
             <GripVertical className="h-4 w-4" />
@@ -979,7 +1025,13 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
           className="notion-editor-area"
           onClick={() => editor.chain().focus().run()}
           onMouseMove={(e) => updateDragHandleFromMouse(e.clientY)}
-          onMouseLeave={() => { if (!isDraggingBlock.current) setDragHandlePos(null); }}
+          onMouseLeave={(e) => {
+            if (isDraggingBlock.current) return;
+            // Don't hide the handle when the mouse moves onto the handle itself
+            const related = e.relatedTarget as Node | null;
+            if (dragHandleRef.current && related && dragHandleRef.current.contains(related)) return;
+            setDragHandlePos(null);
+          }}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onDragLeave={() => setDropTargetIndex(-1)}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/features/auth/authStore";
 import { useBlogs } from "@/features/blogs/blogStore";
@@ -66,7 +66,18 @@ function blocksToHtml(blocks: Block[]): string {
 export default function EditBlog() {
   const { id } = useParams<{ id: string }>();
   const session = useAuth((s) => s.session);
-  const blog = useBlogs((s) => s.blogs.find((b) => b.id === id));
+
+  // Fine-grained selectors — each only re-renders when its own value changes.
+  // Avoid subscribing to the whole blog object so autosave writes don't
+  // cause a re-render of the editor page on every keystroke.
+  const blogExists    = useBlogs((s) => s.blogs.some((b) => b.id === id));
+  const blogAuthorId  = useBlogs((s) => s.blogs.find((b) => b.id === id)?.authorId);
+  const blogStatus    = useBlogs((s) => s.blogs.find((b) => b.id === id)?.status ?? "draft");
+  const blogWordCount = useBlogs((s) => s.blogs.find((b) => b.id === id)?.stats.wordCount ?? 0);
+  const blogReadTime  = useBlogs((s) => s.blogs.find((b) => b.id === id)?.stats.readingTime ?? 1);
+  // Full blog object — only needed for one-off dialog text and settings panel
+  const blog          = useBlogs((s) => s.blogs.find((b) => b.id === id));
+
   const updateBlocks = useBlogs((s) => s.updateBlocks);
   const setStatus = useBlogs((s) => s.setStatus);
   const remove = useBlogs((s) => s.remove);
@@ -107,14 +118,38 @@ export default function EditBlog() {
   // Current (unsaved) HTML – tracked in a ref so we don't re-render on every keystroke
   const currentHtmlRef = useRef(initialHtml);
 
+  // Debounce timer for store writes — avoids a Zustand re-render on every keystroke
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the debounce timer on unmount so we don't write to an unmounted store
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  // Track the current mode in a ref so handleChange can read it without being
+  // re-created every time mode changes (avoids NotionEditor re-mounting)
+  const modeRef = useRef(mode);
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+
   const handleChange = useCallback(
     (html: string) => {
       currentHtmlRef.current = html;
-      setPreviewHtml(html);
-      // Mark dirty when content differs from what was last saved
-      setIsDirty(html !== savedHtmlRef.current);
-      // Always keep the store in sync (autosave draft)
-      updateBlocks(id!, [{ id: htmlBlockId.current, type: "html", content: html }]);
+
+      // Only update preview state when preview is actually visible — avoids a
+      // React re-render on every keystroke while the user is in edit mode
+      if (modeRef.current === "preview") setPreviewHtml(html);
+
+      // Only flip isDirty when the boolean value actually changes, not every keystroke
+      const dirty = html !== savedHtmlRef.current;
+      setIsDirty((prev) => (prev === dirty ? prev : dirty));
+
+      // Debounce store + DB writes — fires 800 ms after the user stops typing
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        updateBlocks(id!, [{ id: htmlBlockId.current, type: "html", content: html }]);
+      }, 800);
     },
     [id, updateBlocks],
   );
@@ -140,12 +175,12 @@ export default function EditBlog() {
     nav(-1); // go back to previous page
   }, [id, updateBlocks, initialHtml, nav]);
 
-  if (!blog) {
+  if (!blogExists || !blog) {
     return <div className="mx-auto max-w-2xl px-4 py-12">Story not found.</div>;
   }
 
-  const isOwner = blog.authorId === session?.user.id;
-  const isPublished = blog.status === "published";
+  const isOwner = blogAuthorId === session?.user.id;
+  const isPublished = blogStatus === "published";
 
   const handleDelete = async () => {
     await remove(blog.id);
@@ -159,25 +194,26 @@ export default function EditBlog() {
   ];
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-8">
+    {/* <div className="mx-auto max-w-4xl px-4 py-8"> */}
       {/* ── Top action bar ── */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="text-sm text-muted-foreground">
           <span
             className={
-              blog.status === "published"
+              blogStatus === "published"
                 ? "text-green-600 dark:text-green-400 font-medium"
                 : "capitalize"
             }
           >
-            {blog.status}
+            {blogStatus}
           </span>
           {isDirty && (
             <span className="ml-2 text-amber-600 dark:text-amber-400 font-medium">
               · Unsaved changes
             </span>
           )}
-          {" "}· {blog.stats.wordCount} words · {blog.stats.readingTime} min
+          {" "}· {blogWordCount} words · {blogReadTime} min
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -185,7 +221,14 @@ export default function EditBlog() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setMode((m) => (m === "edit" ? "preview" : "edit"))}
+            onClick={() => {
+              setMode((m) => {
+                const next = m === "edit" ? "preview" : "edit";
+                // Sync preview HTML from the live ref when entering preview mode
+                if (next === "preview") setPreviewHtml(currentHtmlRef.current);
+                return next;
+              });
+            }}
           >
             {mode === "edit" ? (
               <><Eye className="mr-1 h-4 w-4" /> Preview</>
@@ -215,32 +258,30 @@ export default function EditBlog() {
                     <Save className="mr-1 h-4 w-4" /> Save
                   </Button>
 
-                  {/* Cancel — only when dirty */}
-                  {isDirty && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowCancelDialog(true)}
-                      className="text-destructive hover:border-destructive hover:bg-destructive/10"
-                    >
-                      <X className="mr-1 h-4 w-4" /> Cancel changes
-                    </Button>
-                  )}
+                  {/* Cancel — always in the DOM, invisible until dirty to prevent layout shift */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCancelDialog(true)}
+                    className="text-destructive hover:border-destructive hover:bg-destructive/10"
+                    style={isDirty ? undefined : { visibility: "hidden", pointerEvents: "none" }}
+                  >
+                    <X className="mr-1 h-4 w-4" /> Cancel changes
+                  </Button>
 
-                  {/* Re-publish — only when dirty */}
-                  {isDirty && (
-                    <Button
-                      size="sm"
-                      onClick={async () => {
-                        await handleSave();
-                        await setStatus(blog.id, "published");
-                        toast.success("Re-published!");
-                        nav(`/blog/${blog.slug}`);
-                      }}
-                    >
-                      <RefreshCw className="mr-1 h-4 w-4" /> Re-publish
-                    </Button>
-                  )}
+                  {/* Re-publish — always in the DOM, invisible until dirty to prevent layout shift */}
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      await handleSave();
+                      await setStatus(blog.id, "published");
+                      toast.success("Re-published!");
+                      nav(`/blog/${blog.slug}`);
+                    }}
+                    style={isDirty ? undefined : { visibility: "hidden", pointerEvents: "none" }}
+                  >
+                    <RefreshCw className="mr-1 h-4 w-4" /> Re-publish
+                  </Button>
 
                   {/* Archive */}
                   <Button
