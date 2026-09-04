@@ -3,7 +3,7 @@ import type { Block } from "@/types";
 import { cn } from "@/lib/utils";
 import { InlineText } from "./inline";
 import { getBlockStyle, styleToCss } from "./blockStyle";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, FileCode2 } from "lucide-react";
 
 function youtubeId(url: string): string | null {
   const m = url.match(/(?:youtu\.be\/|v=)([\w-]{11})/);
@@ -200,6 +200,9 @@ function BlockNode({ block }: { block: Block }) {
         </div>
       );
     }
+    case "html":
+      // Tiptap rich-text content rendered as sanitised HTML, with code blocks post-processed
+      return <TiptapHtmlBlock html={block.content} />;
     default:
       return <p className="my-4 font-serif text-lg">{block.content}</p>;
   }
@@ -236,6 +239,124 @@ function CodeBlock({ content, language }: { content: string; language: string })
       <pre className="overflow-x-auto p-4 font-mono text-sm leading-relaxed text-zinc-100">
         <code>{content}</code>
       </pre>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TiptapHtmlBlock — renders HTML output from NotionEditor with richer code blocks
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses the raw Tiptap HTML and replaces each <pre> / <code> pair with the
+ * same styled header + copy-button component used in the editor.
+ * Everything else is rendered as sanitised dangerouslySetInnerHTML.
+ */
+function TiptapHtmlBlock({ html }: { html: string }) {
+  // Split the HTML on every <pre …>…</pre> segment
+  const segments = splitOnPreBlocks(html);
+
+  return (
+    <div className="tiptap-editor-content">
+      {segments.map((seg, i) => {
+        if (seg.type === "text") {
+          // eslint-disable-next-line react/no-danger
+          return <div key={i} dangerouslySetInnerHTML={{ __html: seg.html }} />;
+        }
+        return (
+          <TiptapCodeBlock
+            key={i}
+            language={seg.language}
+            filename={seg.filename}
+            code={seg.code}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+type HtmlSegment =
+  | { type: "text"; html: string }
+  | { type: "code"; language: string; filename: string; code: string };
+
+/** Naive parser: splits an HTML string on <pre …>…</pre> boundaries */
+function splitOnPreBlocks(html: string): HtmlSegment[] {
+  const result: HtmlSegment[] = [];
+  const preRegex = /<pre([^>]*)>([\s\S]*?)<\/pre>/gi;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = preRegex.exec(html)) !== null) {
+    const before = html.slice(lastIndex, match.index);
+    if (before) result.push({ type: "text", html: before });
+
+    const preAttrs = match[1];
+    const inner = match[2];
+    // Extract data-filename from <pre>
+    const filenameMatch = preAttrs.match(/data-filename="([^"]*)"/);
+    const filename = filenameMatch ? filenameMatch[1] : "";
+
+    // Extract language + code text from <code> inside the <pre>
+    const codeMatch = inner.match(/<code[^>]*>([\s\S]*?)<\/code>/i);
+    const codeEl = inner.match(/<code([^>]*)>/i);
+    const langMatch = codeEl?.[1]?.match(/data-language="([^"]*)"/);
+    const language = langMatch ? langMatch[1] : "";
+    const rawCode = codeMatch ? decodeHtmlEntities(codeMatch[1]) : decodeHtmlEntities(inner);
+
+    result.push({ type: "code", language, filename, code: rawCode });
+    lastIndex = match.index + match[0].length;
+  }
+
+  const tail = html.slice(lastIndex);
+  if (tail) result.push({ type: "text", html: tail });
+  return result;
+}
+
+function decodeHtmlEntities(str: string): string {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = str;
+  return txt.value;
+}
+
+function TiptapCodeBlock({
+  language,
+  filename,
+  code,
+}: {
+  language: string;
+  filename: string;
+  code: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div className="tiptap-code-block">
+      <div className="tiptap-code-header">
+        <div className="tiptap-code-header-left">
+          <FileCode2 className="h-3.5 w-3.5 text-zinc-500" />
+          {filename && <span className="tiptap-code-meta-filename">{filename}</span>}
+          {language && <span className="tiptap-code-meta-lang">{language}</span>}
+          {!language && !filename && <span className="tiptap-code-meta-lang">code</span>}
+        </div>
+        <button
+          type="button"
+          className="tiptap-code-copy-btn"
+          onClick={copy}
+          aria-label={copied ? "Copied" : "Copy code"}
+        >
+          {copied ? <><Check className="h-3 w-3" />Copied</> : <><Copy className="h-3 w-3" />Copy</>}
+        </button>
+      </div>
+      <div className="tiptap-code-body">
+        <pre><code>{code}</code></pre>
+      </div>
     </div>
   );
 }

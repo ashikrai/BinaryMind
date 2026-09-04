@@ -296,3 +296,1200 @@
   }
 }
 
+
+/* ============================================================
+ * Notion-style Editor — theme-aware (light & dark)
+ * ─ Font: system-ui (same as Notion / Inter)
+ * ─ Layout: editor + ToC sidebar side-by-side
+ * ─ "+" button: floats LEFT of the line, never overlaps text
+ * ─ All colours via CSS variables → responds to theme toggle
+ * ============================================================ */
+
+/* ── Outer two-column layout (editor + ToC) ───────────────── */
+.notion-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+/* ── Editor column ────────────────────────────────────────── */
+.notion-editor-wrapper {
+  flex: 1;
+  min-width: 0; /* prevents flex child from overflowing */
+  position: relative;
+  min-height: 75vh;
+  background-color: var(--color-background);
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  transition: border-color 0.15s;
+}
+.notion-editor-wrapper:focus-within {
+  border-color: var(--color-ring);
+}
+
+/* ── Editing area — left padding reserves space for "+" button ── */
+.notion-editor-area {
+  /* 2.5rem top/bottom, 2rem right, 3.25rem left — the extra left space is
+     where the FloatingMenu "+" button renders WITHOUT overlapping the text */
+  padding: 2.5rem 2.5rem 4rem 3.25rem;
+  min-height: 70vh;
+  cursor: text;
+}
+@media (max-width: 640px) {
+  .notion-editor-area { padding: 1.5rem 1.25rem 3rem 2.25rem; }
+}
+
+/* ── Prose content (ProseMirror editable) ─────────────────── */
+/*  Font: same stack as Notion — system-ui is "Inter" on most platforms */
+.notion-editor-content {
+  outline: none;
+  min-height: 400px;
+  color: var(--color-foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem;        /* 16px — Notion default */
+  line-height: 1.75;
+  caret-color: var(--color-foreground);
+}
+
+/* Placeholder */
+.notion-editor-content .is-editor-empty::before,
+.notion-editor-content p.is-empty::before,
+.notion-editor-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-muted-foreground);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ── Headings — Notion scale ──────────────────────────────── */
+.notion-editor-content h1 {
+  font-size: 2rem;          /* ~32px like Notion H1 */
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 2rem;
+  margin-bottom: 0.125rem;
+  color: var(--color-foreground);
+  letter-spacing: -0.01em;
+}
+.notion-editor-content h2 {
+  font-size: 1.5rem;        /* ~24px */
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 1.75rem;
+  margin-bottom: 0.125rem;
+  color: var(--color-foreground);
+}
+.notion-editor-content h3 {
+  font-size: 1.25rem;       /* ~20px */
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.5rem;
+  margin-bottom: 0.125rem;
+  color: var(--color-foreground);
+}
+
+/* ── Paragraph ────────────────────────────────────────────── */
+.notion-editor-content p {
+  margin: 0.125rem 0;
+  color: var(--color-foreground);
+  /* required so the .notion-placeholder widget is positioned relative to the line */
+  position: relative;
+}
+
+/* ── Inline marks ─────────────────────────────────────────── */
+.notion-editor-content strong { font-weight: 700; }
+.notion-editor-content em { font-style: italic; }
+.notion-editor-content u { text-decoration: underline; text-underline-offset: 2px; }
+.notion-editor-content s { text-decoration: line-through; opacity: 0.65; }
+
+/* Inline code */
+.notion-editor-content code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 0.875em;
+  background-color: color-mix(in oklab, var(--color-foreground) 8%, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  color: oklch(0.72 0.18 25); /* reddish inline code like Notion */
+}
+.dark .notion-editor-content code {
+  color: oklch(0.78 0.14 25);
+  background-color: color-mix(in oklab, var(--color-foreground) 12%, transparent);
+}
+
+/* ── Code block ───────────────────────────────────────────── */
+.notion-editor-content pre {
+  background-color: oklch(0.14 0.04 265);
+  border: 1px solid oklch(1 0 0 / 10%);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+.notion-editor-content pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: oklch(0.9 0.01 255);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ── Blockquote ───────────────────────────────────────────── */
+.notion-editor-content blockquote {
+  border-left: 3px solid color-mix(in oklab, var(--color-foreground) 30%, transparent);
+  margin: 1rem 0;
+  padding: 0.25rem 0 0.25rem 1rem;
+  color: var(--color-muted-foreground);
+}
+.notion-editor-content blockquote p { margin: 0; }
+
+/* ── Lists ────────────────────────────────────────────────── */
+.notion-editor-content ul,
+.notion-editor-content ol {
+  padding-left: 1.5rem;
+  margin: 0.25rem 0;
+}
+.notion-editor-content ul { list-style-type: disc; }
+.notion-editor-content ol { list-style-type: decimal; }
+.notion-editor-content li { margin: 0.1rem 0; }
+.notion-editor-content li p { margin: 0; }
+
+/* Task list */
+.notion-editor-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.125rem;
+}
+.notion-editor-content ul[data-type="taskList"] > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+}
+.notion-editor-content ul[data-type="taskList"] > li > label {
+  flex-shrink: 0;
+  padding-top: 0.2rem;
+  display: flex;
+}
+.notion-editor-content ul[data-type="taskList"] > li > label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.notion-editor-content ul[data-type="taskList"] > li > div { flex: 1; }
+.notion-editor-content ul[data-type="taskList"] > li[data-checked="true"] > div {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+/* ── Horizontal rule ──────────────────────────────────────── */
+.notion-editor-content hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 1.75rem 0;
+}
+
+/* ── Links ────────────────────────────────────────────────── */
+.notion-editor-content a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in oklab, var(--color-foreground) 35%, transparent);
+  cursor: pointer;
+}
+.notion-editor-content a:hover {
+  text-decoration-color: var(--color-foreground);
+}
+
+/* ── Highlight ────────────────────────────────────────────── */
+.notion-editor-content mark {
+  background-color: oklch(0.95 0.18 92);
+  color: oklch(0.25 0.05 92);
+  border-radius: 2px;
+  padding: 0.05em 0.15em;
+}
+.dark .notion-editor-content mark {
+  background-color: oklch(0.7 0.16 90 / 35%);
+  color: var(--color-foreground);
+}
+
+/* ── Images ───────────────────────────────────────────────── */
+.notion-editor-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+  display: block;
+}
+.notion-editor-content img.ProseMirror-selectednode {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Text selection ───────────────────────────────────────── */
+.notion-editor-content ::selection {
+  background-color: color-mix(in oklab, var(--color-primary) 22%, transparent);
+}
+
+/* ── Bubble menu / toolbar ────────────────────────────────── */
+.notion-bubble-toolbar {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px -4px color-mix(in oklab, var(--color-foreground) 25%, transparent);
+  padding: 0.25rem;
+}
+
+.notion-bubble-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.25rem;
+  color: var(--color-foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  flex-shrink: 0;
+}
+.notion-bubble-btn:hover { background-color: var(--color-accent); }
+.notion-bubble-btn--active {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.notion-bubble-sep {
+  width: 1px;
+  height: 1rem;
+  background-color: var(--color-border);
+  margin: 0 0.15rem;
+  flex-shrink: 0;
+}
+
+.notion-link-popover { display: flex; align-items: center; }
+
+/* ── Slash command menu ───────────────────────────────────── */
+.notion-slash-menu {
+  position: absolute;
+  z-index: 50;
+  min-width: 260px;
+  max-width: 320px;
+  max-height: 320px;
+  overflow-y: auto;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  box-shadow: 0 8px 30px -6px color-mix(in oklab, var(--color-foreground) 28%, transparent);
+  padding: 0.375rem;
+  /* top/left set by inline style from caret coordinates */
+}
+
+.notion-slash-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-align: left;
+  transition: background-color 0.1s;
+  color: var(--color-foreground);
+}
+.notion-slash-item:hover,
+.notion-slash-item--active { background-color: var(--color-accent); }
+
+.notion-slash-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 0.3rem;
+  background-color: color-mix(in oklab, var(--color-foreground) 7%, transparent);
+  flex-shrink: 0;
+  color: var(--color-foreground);
+}
+.notion-slash-item--active .notion-slash-icon {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.notion-slash-text { display: flex; flex-direction: column; gap: 0.05rem; }
+.notion-slash-label { font-size: 0.875rem; font-weight: 500; line-height: 1.2; }
+.notion-slash-desc { font-size: 0.75rem; color: var(--color-muted-foreground); line-height: 1.2; }
+
+/* ── Floating "+" button ──────────────────────────────────── */
+/* FloatingMenu renders the button before (to the left of) the paragraph.
+   A small negative translateX pulls it further left so it sits in the
+   margin and NEVER overlaps the placeholder or typed text. */
+.notion-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 3px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-muted-foreground);
+  transition: background-color 0.1s, color 0.1s;
+  transform: translateX(-0.5rem); /* pull it into the left gutter */
+  opacity: 0.5;
+}
+.notion-add-btn:hover {
+  background-color: var(--color-accent);
+  color: var(--color-foreground);
+  opacity: 1;
+}
+.notion-add-plus {
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 400;
+  margin-top: -1px;
+}
+
+/* ── ToC sidebar (right panel) ────────────────────────────── */
+.notion-toc {
+  width: 200px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 5rem; /* below the sticky app header */
+  max-height: calc(100vh - 7rem);
+  overflow-y: auto;
+  padding: 0.75rem 0;
+}
+/* Hide ToC on narrow screens */
+@media (max-width: 1024px) {
+  .notion-toc { display: none; }
+}
+
+.notion-toc-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-muted-foreground);
+  padding: 0 0.5rem 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.notion-toc-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted-foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.1s, color 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+.notion-toc-item:hover {
+  background-color: var(--color-accent);
+  color: var(--color-foreground);
+}
+.notion-toc-item--active {
+  color: var(--color-foreground);
+  font-weight: 500;
+}
+
+/* Indent H2 and H3 to show hierarchy */
+.notion-toc-h1 { padding-left: 0.5rem; }
+.notion-toc-h2 { padding-left: 1rem; font-size: 0.75rem; }
+.notion-toc-h3 { padding-left: 1.5rem; font-size: 0.7rem; }
+
+/* ── Resizable image NodeView ────────────────────────────────── */
+
+/*
+ * The NodeViewWrapper establishes the block formatting context (BFC) so
+ * floated children can't escape the editor boundary.
+ * display:flow-root is BFC without overflow:hidden, so absolutely-positioned
+ * children (the toolbar) can still appear outside the box.
+ */
+.notion-editor-content [data-node-view-wrapper] {
+  display: flow-root;
+  position: relative; /* toolbar anchors to this */
+}
+
+.notion-img-wrapper {
+  /* position:relative so the toolbar's top:-2.5rem is relative to the wrapper */
+  position: relative;
+  /* Prevent browser text-selection highlight bleeding onto the image */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/*
+ * Center: flex row so the image sits in the middle without floating.
+ *   The wrapper itself is a block; inner content is centered via flex.
+ * Left/Right: float the wrapper so prose in the *next sibling* node wraps.
+ *   margin gives breathing room between the image and the text.
+ */
+.notion-img-align-center {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+.notion-img-align-left {
+  float: left;
+  margin: 0.25rem 1.25rem 0.5rem 0;
+}
+.notion-img-align-right {
+  float: right;
+  margin: 0.25rem 0 0.5rem 1.25rem;
+}
+
+.notion-img-inner {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.notion-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  cursor: default;
+  transition: outline 0.1s;
+}
+.notion-img--selected {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Override ProseMirror's default blue node-selection background on atom nodes */
+.notion-editor-content .ProseMirror-selectednode {
+  outline: none !important;
+  background: transparent !important;
+}
+/* The NodeViewWrapper gets this class — suppress any selection paint on it */
+.notion-editor-content [data-node-view-wrapper].ProseMirror-selectednode,
+.notion-editor-content .ProseMirror-selectednode > * {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Floating image toolbar */
+.notion-img-toolbar {
+  position: absolute;
+  top: -2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.2rem;
+  box-shadow: 0 4px 16px -4px color-mix(in oklab, var(--color-foreground) 22%, transparent);
+  z-index: 20;
+  white-space: nowrap;
+}
+.notion-img-tb-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 0.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-foreground);
+  transition: background-color 0.1s;
+  flex-shrink: 0;
+}
+.notion-img-tb-btn:hover        { background-color: var(--color-accent); }
+.notion-img-tb-btn--active      { background-color: var(--color-primary); color: var(--color-primary-foreground); }
+.notion-img-tb-btn--text        { font-size: 0.625rem; font-weight: 600; width: auto; padding: 0 0.3rem; }
+.notion-img-tb-sep {
+  width: 1px; height: 1rem;
+  background-color: var(--color-border);
+  margin: 0 0.1rem;
+  flex-shrink: 0;
+}
+
+/* Drag-resize handles */
+.notion-img-handle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 40px;
+  background-color: var(--color-primary);
+  border-radius: 4px;
+  cursor: ew-resize;
+  opacity: 0.8;
+  z-index: 5;
+}
+.notion-img-handle--left  { left: -4px; }
+.notion-img-handle--right { right: -4px; }
+.notion-img-handle:hover  { opacity: 1; }
+
+/* ── Color picker (text color / highlight) ────────────────────── */
+.notion-color-picker {
+  padding: 0.375rem;
+}
+.notion-color-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.notion-color-swatch {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
+  border: 1.5px solid var(--color-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.notion-color-swatch:hover {
+  transform: scale(1.12);
+  border-color: var(--color-foreground);
+}
+.notion-color-swatch--active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+.notion-color-swatch--none {
+  background-color: var(--color-background);
+}
+.notion-color-none-line {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.notion-color-none-line::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 10%; right: 10%;
+  height: 1.5px;
+  background-color: oklch(0.6 0.2 25);
+  transform: rotate(-45deg);
+  transform-origin: center;
+}
+
+/* Color indicator underline on bubble btn (shows current color) */
+.notion-bubble-color-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.notion-bubble-color-indicator::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 1px; right: 1px;
+  height: 2px;
+  border-radius: 1px;
+  background-color: var(--color-muted-foreground);
+  border-bottom: 2px solid var(--color-muted-foreground); /* fallback */
+}
+
+/* ── Full phone-like emoji picker ─────────────────────────────── */
+.notion-emoji-picker {
+  position: absolute;
+  z-index: 50;
+  width: 300px;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  box-shadow: 0 8px 30px -6px color-mix(in oklab, var(--color-foreground) 28%, transparent);
+  overflow: hidden;
+  /* top/left set by JS */
+}
+
+/* Emoji search bar */
+.notion-emoji-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background-color: color-mix(in oklab, var(--color-foreground) 3%, transparent);
+}
+
+.notion-emoji-search-icon {
+  flex-shrink: 0;
+  color: var(--color-muted-foreground);
+}
+
+.notion-emoji-search-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.8125rem;
+  color: var(--color-foreground);
+  caret-color: var(--color-foreground);
+}
+.notion-emoji-search-input::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+.notion-emoji-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 3px;
+  color: var(--color-muted-foreground);
+  transition: background-color 0.1s;
+}
+.notion-emoji-close:hover { background-color: var(--color-accent); color: var(--color-foreground); }
+
+.notion-emoji-tabs {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.25rem 0.25rem 0;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.notion-emoji-tabs::-webkit-scrollbar { display: none; }
+
+.notion-emoji-tab {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  width: 2rem;
+  height: 1.875rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.25rem 0.25rem 0 0;
+  cursor: pointer;
+  transition: background-color 0.1s;
+  position: relative;
+}
+.notion-emoji-tab:hover { background-color: var(--color-accent); }
+.notion-emoji-tab--active {
+  background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
+}
+.notion-emoji-tab--active::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+  border-radius: 2px 2px 0 0;
+}
+
+.notion-emoji-cat-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted-foreground);
+  padding: 0.375rem 0.5rem 0.125rem;
+}
+
+.notion-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 1px;
+  padding: 0.25rem;
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.notion-emoji-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.08s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.notion-emoji-btn:hover { background-color: var(--color-accent); }
+
+/* ── Custom styled placeholder ──────────────────────────────── */
+/* Rendered via Decoration.widget in StyledPlaceholder extension */
+.notion-placeholder {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--color-muted-foreground);
+  pointer-events: none;
+  user-select: none;
+  font-size: 1rem;
+  line-height: 1.75;
+  /* must NOT be block so it doesn't expand the paragraph height */
+  white-space: nowrap;
+}
+
+.notion-placeholder-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.75em;
+  font-style: normal;
+  line-height: 1;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  border: 1px solid var(--color-border);
+  background-color: color-mix(in oklab, var(--color-foreground) 7%, transparent);
+  color: var(--color-foreground);
+  vertical-align: baseline;
+  margin: 0 0.1em;
+}
+
+/* ── Drag handle (left gutter) ───────────────────────────────── */
+.notion-drag-handle {
+  position: absolute;
+  left: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* vertically centred on the line via inline top set by JS */
+  transform: translateY(-50%);
+  color: var(--color-muted-foreground);
+  opacity: 0;
+  /* smooth glide as mouse moves between blocks */
+  transition: top 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.1s;
+  cursor: grab;
+  z-index: 10;
+  padding: 3px;
+  border-radius: 3px;
+  width: 1.25rem;
+  height: 1.5rem;
+  user-select: none;
+  -webkit-user-drag: element;
+}
+.notion-editor-wrapper:hover .notion-drag-handle,
+.notion-drag-handle:hover {
+  opacity: 1;
+  background-color: var(--color-accent);
+}
+.notion-drag-handle:active {
+  cursor: grabbing;
+  opacity: 1;
+}
+
+/* Drop-target indicator — horizontal blue line between blocks */
+.notion-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 20;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-primary) 30%, transparent);
+}
+.notion-drop-indicator::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+}
+
+/* ── Shared .tiptap-editor-content — read view (BlockRenderer) ── */
+@layer components {
+  .tiptap-editor-content {
+    color: var(--color-foreground);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+  .tiptap-editor-content h1 { font-size: 2rem; font-weight: 700; margin: 2rem 0 0.125rem; letter-spacing: -0.01em; }
+  .tiptap-editor-content h2 { font-size: 1.5rem; font-weight: 600; margin: 1.75rem 0 0.125rem; }
+  .tiptap-editor-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1.5rem 0 0.125rem; }
+  .tiptap-editor-content p { margin: 0.125rem 0; }
+  .tiptap-editor-content strong { font-weight: 700; }
+  .tiptap-editor-content em { font-style: italic; }
+  .tiptap-editor-content u { text-decoration: underline; }
+  .tiptap-editor-content s { text-decoration: line-through; }
+  .tiptap-editor-content code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.875em;
+    background-color: color-mix(in oklab, var(--color-foreground) 8%, transparent);
+    border: 1px solid var(--color-border);
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+    color: oklch(0.72 0.18 25);
+  }
+  .dark .tiptap-editor-content code { color: oklch(0.78 0.14 25); }
+  .tiptap-editor-content pre {
+    background-color: oklch(0.14 0.04 265);
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  .tiptap-editor-content pre code {
+    background: none; border: none; padding: 0;
+    color: oklch(0.9 0.01 255); font-size: 0.875rem; line-height: 1.6;
+  }
+  .tiptap-editor-content blockquote {
+    border-left: 3px solid color-mix(in oklab, var(--color-foreground) 30%, transparent);
+    margin: 1rem 0; padding: 0.25rem 0 0.25rem 1rem;
+    color: var(--color-muted-foreground);
+  }
+  .tiptap-editor-content ul { list-style: disc; padding-left: 1.5rem; margin: 0.25rem 0; }
+  .tiptap-editor-content ol { list-style: decimal; padding-left: 1.5rem; margin: 0.25rem 0; }
+  .tiptap-editor-content li { margin: 0.1rem 0; }
+  .tiptap-editor-content ul[data-type="taskList"] { list-style: none; padding-left: 0.125rem; }
+  .tiptap-editor-content ul[data-type="taskList"] > li {
+    display: flex; align-items: flex-start; gap: 0.5rem; margin: 0.2rem 0;
+  }
+  .tiptap-editor-content ul[data-type="taskList"] > li > label { flex-shrink: 0; padding-top: 0.2rem; }
+  .tiptap-editor-content ul[data-type="taskList"] > li > label input[type="checkbox"] {
+    width: 1rem; height: 1rem; accent-color: var(--color-primary);
+  }
+  .tiptap-editor-content ul[data-type="taskList"] > li > div { flex: 1; }
+  .tiptap-editor-content ul[data-type="taskList"] > li[data-checked="true"] > div {
+    opacity: 0.5; text-decoration: line-through;
+  }
+  .tiptap-editor-content hr { border: none; border-top: 1px solid var(--color-border); margin: 1.75rem 0; }
+  .tiptap-editor-content a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  .tiptap-editor-content mark {
+    background-color: oklch(0.95 0.18 92); color: oklch(0.25 0.05 92); border-radius: 2px; padding: 0.05em 0.15em;
+  }
+  .dark .tiptap-editor-content mark {
+    background-color: oklch(0.7 0.16 90 / 35%); color: var(--color-foreground);
+  }
+  .tiptap-editor-content img { max-width: 100%; border-radius: 0.375rem; margin: 1rem 0; display: block; }
+  .tiptap-editor-content ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 22%, transparent);
+  }
+}
+
+/* ============================================================
+ * Code block NodeView — theme-aware (light & dark)
+ * ============================================================ */
+
+/* ── Outer wrapper ────────────────────────────────────────── */
+.notion-code-block {
+  border: 1px solid var(--color-border);
+  border-radius: 0.625rem;
+  overflow: hidden;
+  margin: 1rem 0;
+  background-color: oklch(0.13 0.03 265);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  transition: border-color 0.15s;
+}
+.notion-code-block--selected {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-ring) 25%, transparent);
+}
+
+/* Light mode gets a slightly different background so it still reads nicely */
+:root:not(.dark) .notion-code-block {
+  background-color: oklch(0.16 0.03 265);
+}
+
+/* ── Header bar ───────────────────────────────────────────── */
+.notion-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.75rem;
+  border-bottom: 1px solid oklch(1 0 0 / 10%);
+  background-color: oklch(1 0 0 / 5%);
+  gap: 0.5rem;
+  min-height: 2.125rem;
+}
+
+.notion-code-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.notion-code-file-icon {
+  color: oklch(0.62 0.06 255);
+  flex-shrink: 0;
+}
+
+.notion-code-filename-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: oklch(0.78 0.04 255);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  min-width: 0;
+  flex: 1;
+  caret-color: oklch(0.9 0.01 255);
+}
+.notion-code-filename-input::placeholder {
+  color: oklch(0.55 0.03 255);
+}
+.notion-code-filename-input:focus {
+  color: oklch(0.9 0.01 255);
+}
+
+.notion-code-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+/* ── Language selector ────────────────────────────────────── */
+.notion-code-lang-wrapper {
+  position: relative;
+}
+
+.notion-code-lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.3rem;
+  background: oklch(1 0 0 / 8%);
+  border: 1px solid oklch(1 0 0 / 15%);
+  color: oklch(0.72 0.06 255);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+.notion-code-lang-btn:hover {
+  background: oklch(1 0 0 / 14%);
+  color: oklch(0.9 0.01 255);
+}
+
+.notion-code-lang-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 60;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px -4px color-mix(in oklab, var(--color-foreground) 25%, transparent);
+  width: 140px;
+  overflow: hidden;
+}
+
+.notion-code-lang-search {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  outline: none;
+  font-size: 0.78rem;
+  color: var(--color-foreground);
+  caret-color: var(--color-foreground);
+}
+.notion-code-lang-search::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+.notion-code-lang-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.notion-code-lang-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--color-foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+.notion-code-lang-option:hover {
+  background-color: var(--color-accent);
+}
+.notion-code-lang-option--active {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+.notion-code-lang-empty {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+/* ── Copy button ──────────────────────────────────────────── */
+.notion-code-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.3rem;
+  background: transparent;
+  border: 1px solid oklch(1 0 0 / 12%);
+  color: oklch(0.62 0.06 255);
+  cursor: pointer;
+  transition: background-color 0.1s, color 0.1s;
+}
+.notion-code-copy-btn:hover {
+  background: oklch(1 0 0 / 14%);
+  color: oklch(0.9 0.01 255);
+}
+
+/* ── Code content ─────────────────────────────────────────── */
+.notion-code-content {
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.notion-code-inner {
+  display: block;
+  white-space: pre;
+  color: oklch(0.9 0.01 255);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  caret-color: oklch(0.9 0.01 255);
+  outline: none;
+  min-height: 1.5em;
+  /* ProseMirror sets this as contenteditable */
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+/* Empty code block placeholder */
+.notion-code-inner.is-empty::before,
+.notion-code-inner:empty::before {
+  content: "Write code here…";
+  color: oklch(0.5 0.03 255);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* ── Read-view: custom code block rendered by BlockRenderer ── */
+.tiptap-code-block {
+  border: 1px solid oklch(1 0 0 / 12%);
+  border-radius: 0.625rem;
+  overflow: hidden;
+  margin: 1rem 0;
+  background-color: oklch(0.13 0.03 265);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+.tiptap-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.75rem;
+  border-bottom: 1px solid oklch(1 0 0 / 10%);
+  background-color: oklch(1 0 0 / 5%);
+  gap: 0.5rem;
+}
+.tiptap-code-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.tiptap-code-meta-lang {
+  font-size: 0.75rem;
+  color: oklch(0.62 0.09 255);
+  font-weight: 500;
+}
+.tiptap-code-meta-filename {
+  font-size: 0.75rem;
+  color: oklch(0.72 0.04 255);
+}
+.tiptap-code-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.3rem;
+  background: transparent;
+  border: 1px solid oklch(1 0 0 / 12%);
+  color: oklch(0.62 0.06 255);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background-color 0.1s, color 0.1s;
+}
+.tiptap-code-copy-btn:hover {
+  background: oklch(1 0 0 / 14%);
+  color: oklch(0.9 0.01 255);
+}
+.tiptap-code-body {
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+}
+.tiptap-code-body pre {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+.tiptap-code-body code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: oklch(0.9 0.01 255);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  white-space: pre;
+}
+
+/* ── Override: inside read-view html block, code blocks use tiptap styles ── */
+.tiptap-editor-content .notion-code-block {
+  /* code blocks rendered from HTML output use same dark shell */
+  border: 1px solid oklch(1 0 0 / 12%);
+}

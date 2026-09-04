@@ -17,7 +17,15 @@ function slugify(text: string) {
 }
 
 function textOfBlocks(blocks: Block[]) {
-  return blocks.map((b) => b.content).join(" ");
+  return blocks
+    .map((b) => {
+      // Strip HTML tags for HTML blocks (Tiptap output)
+      if (b.type === "html") {
+        return b.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+      }
+      return b.content;
+    })
+    .join(" ");
 }
 
 function computeStats(blocks: Block[]) {
@@ -207,7 +215,7 @@ export const useBlogs = create<BlogsState>((set, get) => ({
   // -------------------------------------------------------------------------
   create: async (authorId, authorName, authorAvatar, seed) => {
     const now = new Date().toISOString();
-    const title = seed?.title ?? "Untitled story";
+    const title = seed?.title ?? "Share your story!";
     const blog: Blog = {
       id: uuid(),
       authorId,
@@ -301,7 +309,15 @@ export const useBlogs = create<BlogsState>((set, get) => ({
   updateBlocks: async (id, blocks) => {
     const stats = computeStats(blocks);
     const now = new Date().toISOString();
-    const newTitle = blocks.find((x) => x.type === "title")?.content;
+    // Support both legacy block-based title and Tiptap HTML title (first <h1>)
+    let newTitle = blocks.find((x) => x.type === "title")?.content;
+    if (!newTitle) {
+      const htmlBlock = blocks.find((x) => x.type === "html");
+      if (htmlBlock) {
+        const m = htmlBlock.content.match(/<h1[^>]*>(.*?)<\/h1>/i);
+        if (m) newTitle = m[1].replace(/<[^>]*>/g, "").trim();
+      }
+    }
 
     // Recompute slug only when the title has changed AND the existing slug is
     // still the auto-generated "untitled-*" placeholder (never re-slug a blog
