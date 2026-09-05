@@ -1,0 +1,1 @@
+import{a as u,u as n,b as o,r as a,t as i}from"./index-CgarCtDG.js";function l(){const t=u(e=>e.session.user),s=n(e=>e.create),c=o(),r=a.useRef(!1);return a.useEffect(()=>{r.current||(r.current=!0,s(t.id,t.name,t.avatar).then(e=>c(`/edit/${e.id}`,{replace:!0})).catch(()=>i.error("Failed to create story. Check your connection.")))},[]),null}export{l as default};
