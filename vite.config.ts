@@ -163,7 +163,7 @@ function mediumProxyPlugin(): Plugin {
 }
 
 export default defineConfig(() => ({
-  base: process.env.VITE_BASE ?? "/",
+  base: '/BinaryMind/',
   plugins: [react(), tailwindcss(), tsconfigPaths(), mediumProxyPlugin()],
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },

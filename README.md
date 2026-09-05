@@ -365,7 +365,7 @@ VITE_GOOGLE_CLIENT_ID=<your-oauth-client-id>.apps.googleusercontent.com
 # ── Vite base path ─────────────────────────────────────────────────
 # Only needed when deploying to a subpath (e.g. GitHub Pages /repo/).
 # Leave unset for root deployments.
-# VITE_BASE=/repo/
+# VITE_BASE=/BinaryMind/
 ```
 
 | Variable | Required | Description |
@@ -427,7 +427,7 @@ This app uses **Google Identity Services directly** (not Supabase Auth). Because
 1. Set the base path for your repo subpath:
 
    ```bash
-   VITE_BASE=/your-repo-name/ bun run build
+   VITE_BASE=/BinaryMind/ bun run build
    ```
 
 2. Publish the `dist/` folder to the `gh-pages` branch.
