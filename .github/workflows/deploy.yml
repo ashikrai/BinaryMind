@@ -1,0 +1,97 @@
+name: Deploy BinaryMind to GitHub Pages
+# When we manually push changes to GitHub Pages, we run command [npm run deploy]
+# This will run two below commands defined in package.json file
+  # "predeploy": "npm run build",
+  # "deploy": "gh-pages -d dist",
+
+# We are trying to achieve the same in GitHub Action using this file
+  # Triggering build
+    #       - name: Build
+    #         run: npm run build
+  # Deploy pages
+    # - name: Deploy to GitHub Pages
+    #     id: deployment
+    #     uses: actions/deploy-pages@v4
+
+
+
+
+# [on] defines, when this GitHub Action should run
+# There are two triggers:
+  # PUSH:
+    # This means: Run this workflow whenever code is pushed to GitHub.
+  # branches:
+    # This restricts the trigger to the main branch.
+    # git push origin main -> This will trigger the workflow ✅
+    # git push origin develop -> This will not trigger the workflow ❌
+on:
+  push:
+    branches:
+      - main
+
+# This is added to allow manual start of the workflow, without it we cannot manually trigger the workflow
+# With this we can perform: GitHub → Repository → Actions → Your workflow → Run workflow
+  workflow_dispatch:
+
+
+# Defining the permission for GitHub Action
+  # contents: read
+    # This allows the workflow to read your repository contents.
+  # pages: write
+    # This allows the workflow to deploy to GitHub Pages.
+    # Without this permission action [uses: actions/deploy-pages@v4] will fail
+  # id-token: write
+    # This allows GitHub Actions to obtain an OIDC identity token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+
+# This section controls what happens if multiple deployments are triggered around the same time.
+  # group: pages
+    # This puts all deployments into the same concurrency group:
+  # cancel-in-progress: true
+    # If a new deployment starts while an older deployment is running, cancel the older one.
+    # This is useful, because we want to always deploy the latest build
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+
+# A job is a group of steps that execute together on a runner.
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
