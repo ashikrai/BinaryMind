@@ -264,7 +264,8 @@ export default function EditBlog() {
                     size="sm"
                     onClick={() => setShowCancelDialog(true)}
                     className="text-destructive hover:border-destructive hover:bg-destructive/10"
-                    style={isDirty ? undefined : { visibility: "hidden", pointerEvents: "none" }}
+                    //  Uncomment this to show cancel button only when blog content is changed.
+                    // style={isDirty ? undefined : { visibility: "hidden", pointerEvents: "none" }}
                   >
                     <X className="mr-1 h-4 w-4" /> Cancel changes
                   </Button>

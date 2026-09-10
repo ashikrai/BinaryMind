@@ -27,6 +27,7 @@ const Drafts = lazy(() => import("@/pages/Drafts"));
 const Published = lazy(() => import("@/pages/Published"));
 const Archive = lazy(() => import("@/pages/Archive"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const About = lazy(() => import("@/pages/About"));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -76,6 +77,7 @@ export function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/blog/:slug" element={<ReadBlog />} />
                   <Route path="/search" element={<Search />} />
+                  <Route path="/about" element={<About />} />
                   <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                   <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
                   <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />

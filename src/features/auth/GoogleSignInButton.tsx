@@ -59,10 +59,10 @@ export function GoogleSignInButton() {
       });
       window.google.accounts.id.renderButton(holder.current!, {
         theme: "outline",
-        size: "large",
-        text: "continue_with",
+        size: "medium",
+        text: "signin_with",
         shape: "pill",
-        width: 320,
+        width: 170,
       });
     };
     tryInit();

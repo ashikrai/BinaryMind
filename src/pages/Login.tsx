@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate , Link} from "react-router-dom";
 import { useEffect } from "react";
 import { GoogleSignInButton } from "@/features/auth/GoogleSignInButton";
 import { useAuth } from "@/features/auth/authStore";
@@ -16,7 +16,9 @@ export default function Login() {
 
   return (
     <div className="space-y-6 text-center">
-      <img src={logo} width={70} style={{ margin: "auto" }} alt="Binary Mind" />
+      <Link to="/" className="font-serif text-3xl font-bold">
+        <img src={logo} width={70} style={{ margin: "auto" }} alt="Binary Mind" />
+      </Link>
       <h1 className="font-serif text-3xl font-bold">
         {isWriteIntent ? "Sign in to start writing" : "Welcome to Binary Mind"}
       </h1>
