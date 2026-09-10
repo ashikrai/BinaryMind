@@ -134,6 +134,9 @@ export function AppLayout() {
                       <DropdownMenuItem onClick={() => navigate("/settings")}>
                         Settings
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/about")}>
+                        About BMind
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => {
@@ -151,8 +154,9 @@ export function AppLayout() {
               /* ── Guest ──────────────────────────────────────── */
               <>
                 {/* Desktop: centred nav links + Write */}
+                <div className="flex-1"/>
                 <nav
-                  className="hidden flex-1 items-center justify-center gap-1 sm:flex"
+                  className="hidden items-center justify-center gap-1 sm:flex"
                   aria-label="Main navigation"
                 >
                   {GUEST_NAV.map(({ label, to }) => (
