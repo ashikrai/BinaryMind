@@ -20,11 +20,16 @@ function gistPath(url: string): string | null {
   return m ? m[1] : null;
 }
 
-export function BlockRenderer({ blocks }: { blocks: Block[] }) {
+export function BlockRenderer({ blocks, blogId }: { blocks: Block[]; blogId?: string }) {
+  let headingIndex = 0;
+
   return (
     <article className="prose-mc mx-auto max-w-2xl">
       {blocks.map((b) => {
         const css = styleToCss(getBlockStyle(b));
+        const headingId = blogId && ["title", "html", "h1"].includes(b.type)
+          ? `article-heading-${blogId}-${headingIndex++}`
+          : undefined;
         return (
           <div
             key={b.id}
@@ -35,28 +40,27 @@ export function BlockRenderer({ blocks }: { blocks: Block[] }) {
             style={css.container}
           >
             <div style={css.text}>
-              <BlockNode block={b} />
+              <BlockNode block={b} headingId={headingId} />
             </div>
           </div>
         );
-
       })}
     </article>
   );
 }
 
-function BlockNode({ block }: { block: Block }) {
+function BlockNode({ block, headingId }: { block: Block; headingId?: string }) {
   switch (block.type) {
     case "title":
-      return <h1 className="mb-2 font-serif text-4xl font-bold leading-tight md:text-5xl"><InlineText text={block.content} /></h1>;
+      return <h1 id={headingId} className="mb-2 font-serif text-4xl font-bold leading-tight md:text-5xl"><InlineText text={block.content} /></h1>;
     case "subtitle":
       return <p className="mb-8 font-serif text-xl text-muted-foreground"><InlineText text={block.content} /></p>;
     case "h1":
-      return <h2 className="mt-8 font-serif text-3xl font-bold"><InlineText text={block.content} /></h2>;
+      return <h2 id={headingId} className="mt-8 font-serif text-3xl font-bold"><InlineText text={block.content} /></h2>;
     case "h2":
-      return <h3 className="mt-6 font-serif text-2xl font-bold"><InlineText text={block.content} /></h3>;
+      return <h3 id={headingId} className="mt-6 font-serif text-2xl font-bold"><InlineText text={block.content} /></h3>;
     case "h3":
-      return <h4 className="mt-4 font-serif text-xl font-semibold"><InlineText text={block.content} /></h4>;
+      return <h4 id={headingId} className="mt-4 font-serif text-xl font-semibold"><InlineText text={block.content} /></h4>;
     case "paragraph":
       return <p className="my-4 font-serif text-lg leading-relaxed"><InlineText text={block.content} /></p>;
     case "quote":
@@ -286,7 +290,6 @@ function splitOnPreBlocks(html: string): HtmlSegment[] {
   const preRegex = /<pre([^>]*)>([\s\S]*?)<\/pre>/gi;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-
   while ((match = preRegex.exec(html)) !== null) {
     const before = html.slice(lastIndex, match.index);
     if (before) result.push({ type: "text", html: before });
@@ -307,7 +310,6 @@ function splitOnPreBlocks(html: string): HtmlSegment[] {
     result.push({ type: "code", language, filename, code: rawCode });
     lastIndex = match.index + match[0].length;
   }
-
   const tail = html.slice(lastIndex);
   if (tail) result.push({ type: "text", html: tail });
   return result;

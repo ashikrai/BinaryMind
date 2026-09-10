@@ -116,7 +116,7 @@ const StyledPlaceholder = Extension.create({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Color palettes
+// Color palettes + recent-colors store
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TEXT_COLORS = [
@@ -143,6 +143,23 @@ const HIGHLIGHT_COLORS = [
   { label: "Red", value: "#fecaca" },
   { label: "Gray", value: "#e5e7eb" },
 ];
+
+const MAX_RECENT = 8;
+/** Persist up to MAX_RECENT colours in localStorage, most-recent first. */
+function addRecentColor(type: "text" | "highlight", value: string) {
+  if (!value) return;
+  const key = `notion_recent_${type}`;
+  try {
+    const prev: string[] = JSON.parse(localStorage.getItem(key) ?? "[]");
+    const next = [value, ...prev.filter((c) => c !== value)].slice(0, MAX_RECENT);
+    localStorage.setItem(key, JSON.stringify(next));
+  } catch { /* ignore */ }
+}
+function getRecentColors(type: "text" | "highlight"): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(`notion_recent_${type}`) ?? "[]");
+  } catch { return []; }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Slash-command items
@@ -182,7 +199,7 @@ const SLASH_ITEMS: SlashItem[] = [
     keywords: ["image", "img", "photo", "picture", "url"], action: () => { /* handled specially */ } },
 ];
 
-interface PopupCoords { top: number; left: number; }
+interface PopupCoords { top: number; left: number; openUpward?: boolean; }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Image URL dialog
@@ -262,17 +279,28 @@ function LinkPopover({ initial, onCommit, onClose }: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Color picker popovers (text color + highlight)
+// Color picker popovers (text color + highlight) — with custom picker + recents
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ColorPicker({ colors, currentValue, onSelect, onClose }: {
+function ColorPicker({ colors, currentValue, onSelect, onClose, recentType }: {
   colors: { label: string; value: string }[];
   currentValue: string;
   onSelect: (value: string) => void;
   onClose: () => void;
+  recentType: "text" | "highlight";
 }) {
+  const [customValue, setCustomValue] = useState(currentValue || "#000000");
+  const [recentColors, setRecentColors] = useState<string[]>(() => getRecentColors(recentType));
+
+  function pick(value: string) {
+    if (value) { addRecentColor(recentType, value); setRecentColors(getRecentColors(recentType)); }
+    onSelect(value);
+    onClose();
+  }
+
   return (
     <div className="notion-color-picker" onMouseDown={(e) => e.stopPropagation()}>
+      {/* Preset swatches */}
       <div className="notion-color-grid">
         {colors.map(({ label, value }) => (
           <button
@@ -282,11 +310,67 @@ function ColorPicker({ colors, currentValue, onSelect, onClose }: {
               currentValue === value && "notion-color-swatch--active")}
             title={label}
             style={value ? { backgroundColor: value } : undefined}
-            onMouseDown={(e) => { e.preventDefault(); onSelect(value); onClose(); }}
+            onMouseDown={(e) => { e.preventDefault(); pick(value); }}
           >
             {!value && <span className="notion-color-none-line" />}
           </button>
         ))}
+      </div>
+
+      {/* Recent colors row */}
+      {recentColors.length > 0 && (
+        <>
+          <div className="notion-color-section-label">Recent</div>
+          <div className="notion-color-grid">
+            {recentColors.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={cn("notion-color-swatch", currentValue === c && "notion-color-swatch--active")}
+                title={c}
+                style={{ backgroundColor: c }}
+                onMouseDown={(e) => { e.preventDefault(); pick(c); }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Custom hex / native colour input */}
+      <div className="notion-color-custom-row">
+        <label className="notion-color-section-label" style={{ marginBottom: 0 }}>Custom</label>
+        <div className="notion-color-custom-inputs">
+          <input
+            type="color"
+            className="notion-color-native"
+            value={customValue}
+            onChange={(e) => setCustomValue(e.target.value)}
+            onMouseDown={(e) => e.stopPropagation()}
+          />
+          <input
+            type="text"
+            className="notion-color-hex-input"
+            value={customValue}
+            maxLength={7}
+            placeholder="#000000"
+            onChange={(e) => {
+              const v = e.target.value;
+              setCustomValue(v);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); pick(customValue); }
+              if (e.key === "Escape") onClose();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            className="notion-color-apply-btn"
+            onMouseDown={(e) => { e.preventDefault(); pick(customValue); }}
+          >
+            Apply
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -300,20 +384,37 @@ function SlashMenu({ query, selectedIndex, onSelect, coords }: {
   query: string; selectedIndex: number;
   onSelect: (item: SlashItem) => void; coords: PopupCoords | null;
 }) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
+
   const filtered = SLASH_ITEMS.filter((item) => {
     if (!query) return true;
     const q = query.toLowerCase();
     return item.label.toLowerCase().includes(q) || item.keywords.some((k) => k.includes(q));
   });
+
+  // Scroll the active item into view whenever selectedIndex changes (fix #3)
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
+
   if (filtered.length === 0) return null;
-  const style: React.CSSProperties = coords ? { top: coords.top + 4, left: coords.left } : {};
+
+  const style: React.CSSProperties = coords
+    ? coords.openUpward
+      ? { bottom: `calc(100% - ${coords.top - 4}px)`, left: coords.left, top: "auto" }
+      : { top: coords.top + 4, left: coords.left }
+    : {};
+
   return (
-    <div className="notion-slash-menu" style={style}>
+    <div ref={menuRef} className="notion-slash-menu" style={style}>
       {filtered.map((item, i) => {
         const Icon = item.icon;
+        const isActive = i === selectedIndex;
         return (
           <button key={item.id} type="button"
-            className={cn("notion-slash-item", i === selectedIndex && "notion-slash-item--active")}
+            ref={isActive ? activeRef : undefined}
+            className={cn("notion-slash-item", isActive && "notion-slash-item--active")}
             onMouseDown={(e) => { e.preventDefault(); onSelect(item); }}>
             <span className="notion-slash-icon"><Icon className="h-4 w-4" /></span>
             <span className="notion-slash-text">
@@ -359,7 +460,11 @@ function EmojiPicker({ triggerQuery, onSelect, coords, onClose }: {
     ).slice(0, 72);
   }, [searchValue, activeCategory]);
 
-  const style: React.CSSProperties = coords ? { top: coords.top + 4, left: coords.left } : {};
+  const style: React.CSSProperties = coords
+    ? coords.openUpward
+      ? { bottom: `calc(100% - ${coords.top - 4}px)`, left: coords.left, top: "auto" }
+      : { top: coords.top + 4, left: coords.left }
+    : {};
 
   return (
     <div className="notion-emoji-picker" style={style} onMouseDown={(e) => e.stopPropagation()}>
@@ -566,7 +671,14 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
     const caretCoords = view.coordsAtPos(pos);
     const areaRect = editorAreaRef.current?.getBoundingClientRect();
     if (!areaRect) return null;
-    return { top: caretCoords.bottom - areaRect.top, left: caretCoords.left - areaRect.left };
+    // If less than 320px of space below the caret, open the popup upward (fix #2)
+    const spaceBelow = window.innerHeight - caretCoords.bottom;
+    const openUpward = spaceBelow < 320;
+    return {
+      top: caretCoords.bottom - areaRect.top,
+      left: caretCoords.left - areaRect.left,
+      openUpward,
+    };
   }, []);
 
   // ── filtered slash ────────────────────────────────────────────────────────
@@ -649,6 +761,17 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
             setSlashOpen(false);
             return false;
           }
+        }
+
+        // Cmd+K (Mac) / Ctrl+K (Win/Linux) → open link popover (fix #4)
+        if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          if (!view.state.selection.empty) {
+            setShowLinkEdit(true);
+            setShowTextColorPicker(false);
+            setShowHighlightPicker(false);
+          }
+          return true;
         }
 
         // navigate slash menu
@@ -905,6 +1028,7 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
               <ColorPicker
                 colors={TEXT_COLORS}
                 currentValue={currentTextColor}
+                recentType="text"
                 onSelect={(val) => {
                   if (!val) editor.chain().focus().unsetColor().run();
                   else editor.chain().focus().setColor(val).run();
@@ -915,6 +1039,7 @@ export function NotionEditor({ initial, onChange }: NotionEditorProps) {
               <ColorPicker
                 colors={HIGHLIGHT_COLORS}
                 currentValue={currentHighlight}
+                recentType="highlight"
                 onSelect={(val) => {
                   if (!val) editor.chain().focus().unsetHighlight().run();
                   else editor.chain().focus().setHighlight({ color: val }).run();

@@ -143,6 +143,53 @@
   }
 }
 
+/* Reader heading navigation rail */
+.article-heading-rail-marker {
+  width: 1.5rem;
+  height: 0.22rem;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--color-muted-foreground) 36%, transparent);
+  transition:
+    width 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.article-heading-rail-marker:hover,
+.article-heading-rail-marker:focus-visible {
+  width: 2rem;
+  background: color-mix(in oklab, var(--color-foreground) 65%, transparent);
+  outline: none;
+}
+
+.article-heading-rail-marker--nested {
+  width: 0.8rem;
+  margin-left: 0.7rem;
+  height: 0.16rem;
+}
+
+.article-heading-rail-marker--active {
+  width: 2.25rem;
+  background: var(--color-primary);
+  transform: translateX(-0.25rem);
+}
+
+.article-heading-rail-popover {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg-strong);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(20px) saturate(160%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-heading-rail-marker {
+    transition: none;
+  }
+}
+
 /* ============================================================
  * iOS "Liquid Glass" surface treatment
  * Applied to floating surfaces (popovers, dropdowns, dialogs,
@@ -156,8 +203,9 @@
     --glass-bg-strong: color-mix(in oklab, var(--color-popover) 78%, transparent);
     --glass-border: color-mix(in oklab, var(--color-foreground) 14%, transparent);
     --glass-highlight: color-mix(in oklab, white 55%, transparent);
-    --glass-shadow: 0 10px 30px -12px color-mix(in oklab, var(--color-foreground) 35%, transparent),
-                    0 2px 8px -2px color-mix(in oklab, var(--color-foreground) 20%, transparent);
+    --glass-shadow:
+      0 10px 30px -12px color-mix(in oklab, var(--color-foreground) 35%, transparent),
+      0 2px 8px -2px color-mix(in oklab, var(--color-foreground) 20%, transparent);
     --card-tint: color-mix(in oklab, var(--color-primary) 4%, var(--color-card));
   }
   .dark {
@@ -165,8 +213,7 @@
     --glass-bg-strong: color-mix(in oklab, var(--color-popover) 72%, transparent);
     --glass-border: color-mix(in oklab, white 16%, transparent);
     --glass-highlight: color-mix(in oklab, white 18%, transparent);
-    --glass-shadow: 0 10px 40px -8px rgb(0 0 0 / 0.6),
-                    0 2px 10px -2px rgb(0 0 0 / 0.4);
+    --glass-shadow: 0 10px 40px -8px rgb(0 0 0 / 0.6), 0 2px 10px -2px rgb(0 0 0 / 0.4);
     --card-tint: color-mix(in oklab, white 4%, var(--color-card));
   }
 
@@ -228,14 +275,14 @@
     -webkit-backdrop-filter: blur(4px);
   }
 
-
   /* Cards – tinted surface distinct from the page background */
   .bg-card,
   [data-slot="card"] {
     background-color: var(--card-tint) !important;
     border: 1px solid var(--color-border);
-    box-shadow: 0 1px 0 0 var(--glass-highlight) inset,
-                0 4px 16px -8px color-mix(in oklab, var(--color-foreground) 18%, transparent);
+    box-shadow:
+      0 1px 0 0 var(--glass-highlight) inset,
+      0 4px 16px -8px color-mix(in oklab, var(--color-foreground) 18%, transparent);
   }
 
   /* Sticky header gets a subtle glass sheen too */
@@ -247,11 +294,12 @@
   }
 }
 
-
 /* Inline `code` highlight — used in editor (live) and renderer */
 @layer components {
   .inline-code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+      monospace;
     background-color: color-mix(in oklab, var(--color-foreground) 10%, transparent);
     border: 1px solid var(--color-border);
     border-radius: 4px;
@@ -296,7 +344,6 @@
   }
 }
 
-
 /* ============================================================
  * Notion-style Editor — theme-aware (light & dark)
  * ─ Font: system-ui (same as Notion / Inter)
@@ -336,7 +383,9 @@
   cursor: text;
 }
 @media (max-width: 640px) {
-  .notion-editor-area { padding: 1.5rem 1.25rem 3rem 2.25rem; }
+  .notion-editor-area {
+    padding: 1.5rem 1.25rem 3rem 2.25rem;
+  }
 }
 
 /* ── Prose content (ProseMirror editable) ─────────────────── */
@@ -345,8 +394,9 @@
   outline: none;
   min-height: 400px;
   color: var(--color-foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
-  font-size: 1rem;        /* 16px — Notion default */
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1rem; /* 16px — Notion default */
   line-height: 1.75;
   caret-color: var(--color-foreground);
 }
@@ -364,7 +414,7 @@
 
 /* ── Headings — Notion scale ──────────────────────────────── */
 .notion-editor-content h1 {
-  font-size: 2rem;          /* ~32px like Notion H1 */
+  font-size: 2rem; /* ~32px like Notion H1 */
   font-weight: 700;
   line-height: 1.2;
   margin-top: 2rem;
@@ -373,7 +423,7 @@
   letter-spacing: -0.01em;
 }
 .notion-editor-content h2 {
-  font-size: 1.5rem;        /* ~24px */
+  font-size: 1.5rem; /* ~24px */
   font-weight: 600;
   line-height: 1.25;
   margin-top: 1.75rem;
@@ -381,7 +431,7 @@
   color: var(--color-foreground);
 }
 .notion-editor-content h3 {
-  font-size: 1.25rem;       /* ~20px */
+  font-size: 1.25rem; /* ~20px */
   font-weight: 600;
   line-height: 1.3;
   margin-top: 1.5rem;
@@ -398,10 +448,20 @@
 }
 
 /* ── Inline marks ─────────────────────────────────────────── */
-.notion-editor-content strong { font-weight: 700; }
-.notion-editor-content em { font-style: italic; }
-.notion-editor-content u { text-decoration: underline; text-underline-offset: 2px; }
-.notion-editor-content s { text-decoration: line-through; opacity: 0.65; }
+.notion-editor-content strong {
+  font-weight: 700;
+}
+.notion-editor-content em {
+  font-style: italic;
+}
+.notion-editor-content u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.notion-editor-content s {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
 
 /* Inline code */
 .notion-editor-content code {
@@ -443,7 +503,9 @@
   padding: 0.25rem 0 0.25rem 1rem;
   color: var(--color-muted-foreground);
 }
-.notion-editor-content blockquote p { margin: 0; }
+.notion-editor-content blockquote p {
+  margin: 0;
+}
 
 /* ── Lists ────────────────────────────────────────────────── */
 .notion-editor-content ul,
@@ -451,10 +513,18 @@
   padding-left: 1.5rem;
   margin: 0.25rem 0;
 }
-.notion-editor-content ul { list-style-type: disc; }
-.notion-editor-content ol { list-style-type: decimal; }
-.notion-editor-content li { margin: 0.1rem 0; }
-.notion-editor-content li p { margin: 0; }
+.notion-editor-content ul {
+  list-style-type: disc;
+}
+.notion-editor-content ol {
+  list-style-type: decimal;
+}
+.notion-editor-content li {
+  margin: 0.1rem 0;
+}
+.notion-editor-content li p {
+  margin: 0;
+}
 
 /* Task list */
 .notion-editor-content ul[data-type="taskList"] {
@@ -479,7 +549,9 @@
   border-radius: 2px;
   cursor: pointer;
 }
-.notion-editor-content ul[data-type="taskList"] > li > div { flex: 1; }
+.notion-editor-content ul[data-type="taskList"] > li > div {
+  flex: 1;
+}
 .notion-editor-content ul[data-type="taskList"] > li[data-checked="true"] > div {
   opacity: 0.5;
   text-decoration: line-through;
@@ -559,7 +631,9 @@
   transition: background-color 0.1s;
   flex-shrink: 0;
 }
-.notion-bubble-btn:hover { background-color: var(--color-accent); }
+.notion-bubble-btn:hover {
+  background-color: var(--color-accent);
+}
 .notion-bubble-btn--active {
   background-color: var(--color-primary);
   color: var(--color-primary-foreground);
@@ -573,7 +647,10 @@
   flex-shrink: 0;
 }
 
-.notion-link-popover { display: flex; align-items: center; }
+.notion-link-popover {
+  display: flex;
+  align-items: center;
+}
 
 /* ── Slash command menu ───────────────────────────────────── */
 .notion-slash-menu {
@@ -588,7 +665,8 @@
   border-radius: 0.625rem;
   box-shadow: 0 8px 30px -6px color-mix(in oklab, var(--color-foreground) 28%, transparent);
   padding: 0.375rem;
-  /* top/left set by inline style from caret coordinates */
+  /* top/left (or bottom/left when openUpward) set by inline style */
+  scroll-behavior: smooth;
 }
 
 .notion-slash-item {
@@ -606,7 +684,9 @@
   color: var(--color-foreground);
 }
 .notion-slash-item:hover,
-.notion-slash-item--active { background-color: var(--color-accent); }
+.notion-slash-item--active {
+  background-color: var(--color-accent);
+}
 
 .notion-slash-icon {
   display: flex;
@@ -624,9 +704,21 @@
   color: var(--color-primary-foreground);
 }
 
-.notion-slash-text { display: flex; flex-direction: column; gap: 0.05rem; }
-.notion-slash-label { font-size: 0.875rem; font-weight: 500; line-height: 1.2; }
-.notion-slash-desc { font-size: 0.75rem; color: var(--color-muted-foreground); line-height: 1.2; }
+.notion-slash-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.notion-slash-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.notion-slash-desc {
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+  line-height: 1.2;
+}
 
 /* ── Floating "+" button ──────────────────────────────────── */
 /* FloatingMenu renders the button before (to the left of) the paragraph.
@@ -643,7 +735,9 @@
   border: none;
   cursor: pointer;
   color: var(--color-muted-foreground);
-  transition: background-color 0.1s, color 0.1s;
+  transition:
+    background-color 0.1s,
+    color 0.1s;
   transform: translateX(-0.5rem); /* pull it into the left gutter */
   opacity: 0.5;
 }
@@ -671,7 +765,9 @@
 }
 /* Hide ToC on narrow screens */
 @media (max-width: 1024px) {
-  .notion-toc { display: none; }
+  .notion-toc {
+    display: none;
+  }
 }
 
 .notion-toc-title {
@@ -698,7 +794,9 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background-color 0.1s, color 0.1s;
+  transition:
+    background-color 0.1s,
+    color 0.1s;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -714,9 +812,17 @@
 }
 
 /* Indent H2 and H3 to show hierarchy */
-.notion-toc-h1 { padding-left: 0.5rem; }
-.notion-toc-h2 { padding-left: 1rem; font-size: 0.75rem; }
-.notion-toc-h3 { padding-left: 1.5rem; font-size: 0.7rem; }
+.notion-toc-h1 {
+  padding-left: 0.5rem;
+}
+.notion-toc-h2 {
+  padding-left: 1rem;
+  font-size: 0.75rem;
+}
+.notion-toc-h3 {
+  padding-left: 1.5rem;
+  font-size: 0.7rem;
+}
 
 /* ── Resizable image NodeView ────────────────────────────────── */
 
@@ -821,11 +927,22 @@
   transition: background-color 0.1s;
   flex-shrink: 0;
 }
-.notion-img-tb-btn:hover        { background-color: var(--color-accent); }
-.notion-img-tb-btn--active      { background-color: var(--color-primary); color: var(--color-primary-foreground); }
-.notion-img-tb-btn--text        { font-size: 0.625rem; font-weight: 600; width: auto; padding: 0 0.3rem; }
+.notion-img-tb-btn:hover {
+  background-color: var(--color-accent);
+}
+.notion-img-tb-btn--active {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+.notion-img-tb-btn--text {
+  font-size: 0.625rem;
+  font-weight: 600;
+  width: auto;
+  padding: 0 0.3rem;
+}
 .notion-img-tb-sep {
-  width: 1px; height: 1rem;
+  width: 1px;
+  height: 1rem;
   background-color: var(--color-border);
   margin: 0 0.1rem;
   flex-shrink: 0;
@@ -844,13 +961,89 @@
   opacity: 0.8;
   z-index: 5;
 }
-.notion-img-handle--left  { left: -4px; }
-.notion-img-handle--right { right: -4px; }
-.notion-img-handle:hover  { opacity: 1; }
+.notion-img-handle--left {
+  left: -4px;
+}
+.notion-img-handle--right {
+  right: -4px;
+}
+.notion-img-handle:hover {
+  opacity: 1;
+}
 
 /* ── Color picker (text color / highlight) ────────────────────── */
 .notion-color-picker {
   padding: 0.375rem;
+  min-width: 196px;
+}
+
+/* Section label inside color picker (Recent / Custom) */
+.notion-color-section-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted-foreground);
+  padding: 0.375rem 0.125rem 0.2rem;
+  display: block;
+}
+
+/* Custom color row */
+.notion-color-custom-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--color-border);
+}
+.notion-color-custom-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.notion-color-native {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.25rem;
+  border: 1.5px solid var(--color-border);
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  flex-shrink: 0;
+}
+.notion-color-hex-input {
+  flex: 1;
+  min-width: 0;
+  height: 1.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-foreground);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.75rem;
+  padding: 0 0.375rem;
+  outline: none;
+}
+.notion-color-hex-input:focus {
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 1px var(--color-ring);
+}
+.notion-color-apply-btn {
+  flex-shrink: 0;
+  height: 1.75rem;
+  padding: 0 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-foreground);
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+.notion-color-apply-btn:hover {
+  background-color: var(--color-accent);
 }
 .notion-color-grid {
   display: grid;
@@ -867,7 +1060,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s, border-color 0.1s;
+  transition:
+    transform 0.1s,
+    border-color 0.1s;
 }
 .notion-color-swatch:hover {
   transform: scale(1.12);
@@ -888,7 +1083,9 @@
 .notion-color-none-line::after {
   content: "";
   position: absolute;
-  top: 50%; left: 10%; right: 10%;
+  top: 50%;
+  left: 10%;
+  right: 10%;
   height: 1.5px;
   background-color: oklch(0.6 0.2 25);
   transform: rotate(-45deg);
@@ -906,7 +1103,8 @@
   content: "";
   position: absolute;
   bottom: -3px;
-  left: 1px; right: 1px;
+  left: 1px;
+  right: 1px;
   height: 2px;
   border-radius: 1px;
   background-color: var(--color-muted-foreground);
@@ -968,7 +1166,10 @@
   color: var(--color-muted-foreground);
   transition: background-color 0.1s;
 }
-.notion-emoji-close:hover { background-color: var(--color-accent); color: var(--color-foreground); }
+.notion-emoji-close:hover {
+  background-color: var(--color-accent);
+  color: var(--color-foreground);
+}
 
 .notion-emoji-tabs {
   display: flex;
@@ -979,7 +1180,9 @@
   overflow-x: auto;
   scrollbar-width: none;
 }
-.notion-emoji-tabs::-webkit-scrollbar { display: none; }
+.notion-emoji-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .notion-emoji-tab {
   flex-shrink: 0;
@@ -996,14 +1199,18 @@
   transition: background-color 0.1s;
   position: relative;
 }
-.notion-emoji-tab:hover { background-color: var(--color-accent); }
+.notion-emoji-tab:hover {
+  background-color: var(--color-accent);
+}
 .notion-emoji-tab--active {
   background-color: color-mix(in oklab, var(--color-primary) 12%, transparent);
 }
 .notion-emoji-tab--active::after {
   content: "";
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 2px;
   background-color: var(--color-primary);
   border-radius: 2px 2px 0 0;
@@ -1044,7 +1251,9 @@
   line-height: 1;
   flex-shrink: 0;
 }
-.notion-emoji-btn:hover { background-color: var(--color-accent); }
+.notion-emoji-btn:hover {
+  background-color: var(--color-accent);
+}
 
 /* ── Custom styled placeholder ──────────────────────────────── */
 /* Rendered via Decoration.widget in StyledPlaceholder extension */
@@ -1090,7 +1299,9 @@
   color: var(--color-muted-foreground);
   opacity: 0;
   /* smooth glide as mouse moves between blocks */
-  transition: top 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.1s;
+  transition:
+    top 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.1s;
   cursor: grab;
   z-index: 10;
   padding: 3px;
@@ -1138,18 +1349,42 @@
 @layer components {
   .tiptap-editor-content {
     color: var(--color-foreground);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
     font-size: 1rem;
     line-height: 1.75;
   }
-  .tiptap-editor-content h1 { font-size: 2rem; font-weight: 700; margin: 2rem 0 0.125rem; letter-spacing: -0.01em; }
-  .tiptap-editor-content h2 { font-size: 1.5rem; font-weight: 600; margin: 1.75rem 0 0.125rem; }
-  .tiptap-editor-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1.5rem 0 0.125rem; }
-  .tiptap-editor-content p { margin: 0.125rem 0; }
-  .tiptap-editor-content strong { font-weight: 700; }
-  .tiptap-editor-content em { font-style: italic; }
-  .tiptap-editor-content u { text-decoration: underline; }
-  .tiptap-editor-content s { text-decoration: line-through; }
+  .tiptap-editor-content h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 2rem 0 0.125rem;
+    letter-spacing: -0.01em;
+  }
+  .tiptap-editor-content h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 1.75rem 0 0.125rem;
+  }
+  .tiptap-editor-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.125rem;
+  }
+  .tiptap-editor-content p {
+    margin: 0.125rem 0;
+  }
+  .tiptap-editor-content strong {
+    font-weight: 700;
+  }
+  .tiptap-editor-content em {
+    font-style: italic;
+  }
+  .tiptap-editor-content u {
+    text-decoration: underline;
+  }
+  .tiptap-editor-content s {
+    text-decoration: line-through;
+  }
   .tiptap-editor-content code {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 0.875em;
@@ -1159,7 +1394,9 @@
     padding: 0.1em 0.35em;
     color: oklch(0.72 0.18 25);
   }
-  .dark .tiptap-editor-content code { color: oklch(0.78 0.14 25); }
+  .dark .tiptap-editor-content code {
+    color: oklch(0.78 0.14 25);
+  }
   .tiptap-editor-content pre {
     background-color: oklch(0.14 0.04 265);
     border-radius: 0.5rem;
@@ -1168,38 +1405,84 @@
     margin: 1rem 0;
   }
   .tiptap-editor-content pre code {
-    background: none; border: none; padding: 0;
-    color: oklch(0.9 0.01 255); font-size: 0.875rem; line-height: 1.6;
+    background: none;
+    border: none;
+    padding: 0;
+    color: oklch(0.9 0.01 255);
+    font-size: 0.875rem;
+    line-height: 1.6;
   }
   .tiptap-editor-content blockquote {
     border-left: 3px solid color-mix(in oklab, var(--color-foreground) 30%, transparent);
-    margin: 1rem 0; padding: 0.25rem 0 0.25rem 1rem;
+    margin: 1rem 0;
+    padding: 0.25rem 0 0.25rem 1rem;
     color: var(--color-muted-foreground);
   }
-  .tiptap-editor-content ul { list-style: disc; padding-left: 1.5rem; margin: 0.25rem 0; }
-  .tiptap-editor-content ol { list-style: decimal; padding-left: 1.5rem; margin: 0.25rem 0; }
-  .tiptap-editor-content li { margin: 0.1rem 0; }
-  .tiptap-editor-content ul[data-type="taskList"] { list-style: none; padding-left: 0.125rem; }
+  .tiptap-editor-content ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+    margin: 0.25rem 0;
+  }
+  .tiptap-editor-content ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+    margin: 0.25rem 0;
+  }
+  .tiptap-editor-content li {
+    margin: 0.1rem 0;
+  }
+  .tiptap-editor-content ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0.125rem;
+  }
   .tiptap-editor-content ul[data-type="taskList"] > li {
-    display: flex; align-items: flex-start; gap: 0.5rem; margin: 0.2rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0.2rem 0;
   }
-  .tiptap-editor-content ul[data-type="taskList"] > li > label { flex-shrink: 0; padding-top: 0.2rem; }
+  .tiptap-editor-content ul[data-type="taskList"] > li > label {
+    flex-shrink: 0;
+    padding-top: 0.2rem;
+  }
   .tiptap-editor-content ul[data-type="taskList"] > li > label input[type="checkbox"] {
-    width: 1rem; height: 1rem; accent-color: var(--color-primary);
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--color-primary);
   }
-  .tiptap-editor-content ul[data-type="taskList"] > li > div { flex: 1; }
+  .tiptap-editor-content ul[data-type="taskList"] > li > div {
+    flex: 1;
+  }
   .tiptap-editor-content ul[data-type="taskList"] > li[data-checked="true"] > div {
-    opacity: 0.5; text-decoration: line-through;
+    opacity: 0.5;
+    text-decoration: line-through;
   }
-  .tiptap-editor-content hr { border: none; border-top: 1px solid var(--color-border); margin: 1.75rem 0; }
-  .tiptap-editor-content a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  .tiptap-editor-content hr {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 1.75rem 0;
+  }
+  .tiptap-editor-content a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
   .tiptap-editor-content mark {
-    background-color: oklch(0.95 0.18 92); color: oklch(0.25 0.05 92); border-radius: 2px; padding: 0.05em 0.15em;
+    background-color: oklch(0.95 0.18 92);
+    color: oklch(0.25 0.05 92);
+    border-radius: 2px;
+    padding: 0.05em 0.15em;
   }
   .dark .tiptap-editor-content mark {
-    background-color: oklch(0.7 0.16 90 / 35%); color: var(--color-foreground);
+    background-color: oklch(0.7 0.16 90 / 35%);
+    color: var(--color-foreground);
   }
-  .tiptap-editor-content img { max-width: 100%; border-radius: 0.375rem; margin: 1rem 0; display: block; }
+  .tiptap-editor-content img {
+    max-width: 100%;
+    border-radius: 0.375rem;
+    margin: 1rem 0;
+    display: block;
+  }
   .tiptap-editor-content ::selection {
     background-color: color-mix(in oklab, var(--color-primary) 22%, transparent);
   }
@@ -1296,7 +1579,9 @@
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 0.75rem;
   cursor: pointer;
-  transition: background-color 0.1s, color 0.1s;
+  transition:
+    background-color 0.1s,
+    color 0.1s;
   white-space: nowrap;
 }
 .notion-code-lang-btn:hover {
@@ -1376,7 +1661,9 @@
   border: 1px solid oklch(1 0 0 / 12%);
   color: oklch(0.62 0.06 255);
   cursor: pointer;
-  transition: background-color 0.1s, color 0.1s;
+  transition:
+    background-color 0.1s,
+    color 0.1s;
 }
 .notion-code-copy-btn:hover {
   background: oklch(1 0 0 / 14%);
@@ -1462,7 +1749,9 @@
   color: oklch(0.62 0.06 255);
   font-size: 0.72rem;
   cursor: pointer;
-  transition: background-color 0.1s, color 0.1s;
+  transition:
+    background-color 0.1s,
+    color 0.1s;
 }
 .tiptap-code-copy-btn:hover {
   background: oklch(1 0 0 / 14%);
@@ -1492,4 +1781,238 @@
 .tiptap-editor-content .notion-code-block {
   /* code blocks rendered from HTML output use same dark shell */
   border: 1px solid oklch(1 0 0 / 12%);
+}
+
+/* ============================================================
+ * Search Modal — Apple iOS Liquid Glass style
+ * Works for both light and dark themes.
+ * ============================================================ */
+@layer components {
+  /* ── Backdrop (full-screen frosted scrim) ──────────────────── */
+  .search-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    /* Semi-transparent blur scrim */
+    background-color: color-mix(in oklab, var(--color-foreground) 28%, transparent);
+    backdrop-filter: blur(6px) saturate(140%);
+    -webkit-backdrop-filter: blur(6px) saturate(140%);
+    /* Animate in */
+    animation: search-backdrop-in 0.18s ease forwards;
+  }
+
+  @keyframes search-backdrop-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* ── Modal panel — the glass card ─────────────────────────── */
+  .search-modal-panel {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    /* Liquid Glass surface */
+    background-color: var(--glass-bg-strong);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1px 0 0 var(--glass-highlight);
+    /* Animate in */
+    animation: search-panel-in 0.22s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @keyframes search-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(-16px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* ── Input row ─────────────────────────────────────────────── */
+  .search-modal-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+  }
+
+  .search-modal-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    color: var(--color-muted-foreground);
+  }
+
+  .search-modal-input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    color: var(--color-foreground);
+    caret-color: var(--color-foreground);
+    line-height: 1.5;
+  }
+  .search-modal-input::placeholder {
+    color: var(--color-muted-foreground);
+  }
+
+  .search-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    color: var(--color-muted-foreground);
+    background-color: color-mix(in oklab, var(--color-foreground) 8%, transparent);
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .search-modal-close:hover {
+    background-color: color-mix(in oklab, var(--color-foreground) 16%, transparent);
+    color: var(--color-foreground);
+  }
+
+  /* ── Results list ──────────────────────────────────────────── */
+  .search-modal-results {
+    overflow-y: auto;
+    padding: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--glass-border) transparent;
+  }
+  .search-modal-results::-webkit-scrollbar {
+    width: 4px;
+  }
+  .search-modal-results::-webkit-scrollbar-thumb {
+    background-color: var(--glass-border);
+    border-radius: 2px;
+  }
+
+  .search-modal-empty {
+    padding: 1.25rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-muted-foreground);
+    text-align: center;
+  }
+
+  /* ── Result item ───────────────────────────────────────────── */
+  .search-modal-result-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    width: 100%;
+    padding: 0.75rem 0.75rem;
+    border-radius: 0.75rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.12s;
+  }
+  .search-modal-result-item:hover {
+    background-color: color-mix(in oklab, var(--color-foreground) 6%, transparent);
+  }
+
+  .search-modal-result-cover {
+    width: 5.5rem;
+    height: 3.5rem;
+    flex-shrink: 0;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    border: 1px solid var(--glass-border);
+  }
+
+  .search-modal-result-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .search-modal-result-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--color-foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .search-modal-result-desc {
+    font-size: 0.8125rem;
+    color: var(--color-muted-foreground);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .search-modal-result-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-top: 0.15rem;
+  }
+
+  .search-modal-tag {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--glass-border);
+    color: var(--color-muted-foreground);
+    background-color: color-mix(in oklab, var(--color-foreground) 5%, transparent);
+    white-space: nowrap;
+  }
+}
+
+.hero-section{
+  background-image: url('./media/images/BMind-HeroBG.png');
+  /* background-image: url('./media/images/BMind-HeroBG.png'); */
+  /* Ensure the image covers the area nicely */
+  background-size: contain;
+  
+  /* Center the image vertically and horizontally */
+  background-position: right;
+  
+  /* Prevent the image from repeating */
+  background-repeat: no-repeat;
+  background-size: 100%; 
+  
+  transition: all 0.3s ease-in-out;
+}
+
+.hero-section:hover{
+  background-size: 101%; 
 }
